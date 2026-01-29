@@ -15,13 +15,16 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def cook_content():
     print("Connecting to the algorithm...")
     
-    # 1. Check for 'Liked' content to inform the algorithm
+    # 1. Fetch recent interactions, prioritized by dwell time (deep focus)
     history = supabase.table("posts") \
-        .select("prompt, category, liked, comment") \
-        .or("liked.eq.true,comment.not.is.null") \
-        .order("created_at", desc=True) \
+        .select("prompt, category, liked, comment, dwell_time_ms") \
+        .eq("disliked", False) \
+        .or_("liked.eq.true,comment.not.is.null") \
+        .order("dwell_time_ms", desc=True) \
         .limit(50) \
         .execute()
+
+    user_preferences = "None yet" if not history.data else str(history.data)
 
     # 2. Craft the prompt for Groq
     system_instruction = f"""
