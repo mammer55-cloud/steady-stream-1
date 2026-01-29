@@ -5,200 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Steady Stream V1</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-        :root { 
-            /* A deep, warm cream palette mimicking maxed Night Shift */
-            --bg: #fff5e6; 
-            --text: #2e2a24; 
-            --accent: #b0a491; 
-            --active-brown: #8b4513;
-        }
-
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            height: 100%; 
-            overflow: hidden; 
-            background: var(--bg); 
-            font-family: 'Times New Roman', serif; 
-            color: var(--text); 
-            transition: background 0.5s ease;
-        }
-
-        .container { 
-            height: 100vh; 
-            overflow-y: scroll; 
-            scroll-snap-type: y mandatory; 
-            scroll-snap-stop: always; /* Forces stop at each post */
-            -webkit-overflow-scrolling: touch; 
-            }
-
-        .card { 
-            height: 100vh; 
-            scroll-snap-align: start; 
-            scroll-snap-stop: always; /* Forces stop at each card */
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 2.5rem; 
-            box-sizing: border-box; 
-            text-align: center; 
-            position: relative; 
-            }
-
-        .prompt { 
-            font-size: 1.7rem; 
-            line-height: 1.5; 
-            max-width: 600px; 
-            margin-bottom: 2rem; 
-            opacity: 0; 
-            transition: opacity 1.2s ease-in; 
-        }
-
-        .prompt.visible { 
-            opacity: 1; 
-        }
-
-
-        .bridge-container { 
-            min-height: 120px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-        }
-
-        .bridge { 
-            font-family: sans-serif; 
-            font-size: 1.1rem; 
-            color: var(--accent); 
-            max-width: 500px; 
-            opacity: 0; 
-            transform: translateY(10px); 
-            transition: all 0.8s ease-out; 
-            display: none; 
-        }
-
-        .bridge.visible { 
-            opacity: 1; 
-            transform: translateY(0); 
-            display: block; 
-        }
-
-        .ready-btn { 
-            background: none; 
-            border: 1px solid var(--accent); 
-            color: var(--accent); 
-            padding: 12px 24px; 
-            cursor: pointer; 
-            border-radius: 20px; 
-            font-family: sans-serif;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-        }
-
-        .ready-btn:hover {
-            border-color: var(--text);
-            color: var(--text);
-        }
-
-        .controls { 
-            position: absolute; 
-            bottom: 60px; 
-            display: flex; 
-            gap: 30px; 
-            align-items: center; 
-        }
-
-        /* Minimalist text-based buttons to replace emojis */
-        .like-btn, .dislike-btn { 
-            font-family: sans-serif; 
-            font-size: 0.75rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            opacity: 0.4;
-            transition: opacity 0.3s ease, color 0.3s ease;
-            user-select: none;
-        }
-
-        .like-btn.active { 
-            opacity: 1; 
-            color: var(--active-brown); 
-            font-weight: bold;
-        }
-
-        .dislike-btn:hover {
-            opacity: 1;
-        }
-
-        .dislike-btn.active { color: #a94442; opacity: 1; }
-
-        .thought-input { 
-            border: none; 
-            border-bottom: 1px solid var(--accent); 
-            background: none; 
-            padding: 8px; 
-            font-size: 0.85rem; 
-            width: 160px; 
-            text-align: center; 
-            color: var(--text);
-            font-family: 'Times New Roman', serif;
-            outline: none;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-        }
-
-        .thought-input:focus {
-            opacity: 1;
-            border-bottom-color: var(--text);
-        }
-
-        .tester-bar { 
-            position: fixed; 
-            top: 15px; 
-            right: 15px; 
-            z-index: 1000; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: flex-end; 
-        }
-
-        .test-btn { 
-            background: var(--text); 
-            color: var(--bg); 
-            border: none; 
-            padding: 8px 15px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 11px; 
-            font-family: sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+    <style>
+        :root { --bg: #fff5e6; --text: #2e2a24; --accent: #b0a491; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Times New Roman', serif; color: var(--text); }
         
-        #algo-status {
-            margin-top: 5px;
-            font-family: monospace;
-            font-size: 9px;
-            color: var(--accent);
-            text-transform: uppercase;
-        }
+        /* Feed View */
+        .container { height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-snap-stop: always; -webkit-overflow-scrolling: touch; }
+        .card { height: 100vh; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2.5rem; box-sizing: border-box; text-align: center; position: relative; }
+        
+        /* Grid Hub View */
+        .grid-view { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 20px; padding-bottom: 100px; scroll-snap-type: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+        .thumbnail { background: rgba(255,255,255,0.5); height: 140px; border-radius: 12px; padding: 10px; font-size: 0.6rem; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); }
+
+        .prompt { font-size: 1.7rem; line-height: 1.5; max-width: 600px; margin-bottom: 2rem; opacity: 0; transition: opacity 1.2s ease-in; }
+        .prompt.visible { opacity: 1; }
+        
+        /* Seen Indicator */
+        .seen-dot { position: absolute; top: 40px; font-family: sans-serif; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.3; }
+
+        .controls { position: absolute; bottom: 120px; display: flex; gap: 25px; align-items: center; }
+        .like-btn, .dislike-btn { font-family: sans-serif; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; opacity: 0.4; }
+        .like-btn.active { color: #8b4513; opacity: 1; font-weight: bold; }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.3); z-index: 1000; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .nav-btn { background: none; border: none; color: var(--text); font-family: sans-serif; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; opacity: 0.7; }
+        #algo-status { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
-    <div class="tester-bar">
-        <button class="test-btn" onclick="showSavedHub()">View Saved</button>
-        <button class="test-btn" onclick="loadFeed()">Home Feed</button>
-        <button class="test-btn" onclick="triggerTestCook()">Test Algorithm (+3 Cards)</button>
-        <div id="algo-status" style="font-size: 10px; color: var(--accent);">Ready</div>
+    <div id="algo-status">Ready</div>
+    <div class="bottom-nav">
+        <button class="nav-btn" onclick="goHome()">Home</button>
+        <button class="nav-btn" onclick="showSavedHub()">Saved</button>
+        <button class="nav-btn" onclick="triggerTestCook()">Cook +3</button>
     </div>
     <div class="container" id="feed"></div>
 
 <script>
-// --- placeholders to be replaced by GitHub Actions ---
     const SUPABASE_URL = "UK_WILDCATS_URL";
     const SUPABASE_KEY = "UK_WILDCATS_KEY";
     const GROQ_KEY = "UK_WILDCATS_GROQ";
@@ -208,112 +52,88 @@
 
     let viewStart = null;
     let activeCardId = null;
-    let totalDwellTime = 0;
-
-    // Helper to render any data set (Home or Saved)
-    function renderFeed(data) {
-        const feed = document.getElementById('feed');
-        feed.innerHTML = '';
-        data.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.setAttribute('data-id', item.id); 
-            card.innerHTML = `
-                <div class="prompt">${item.prompt}</div>
-                <div class="bridge-container">
-                    <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
-                    <div class="bridge">${item.bridge}</div>
-                </div>
-                <div class="controls">
-                    <span class="like-btn ${item.liked ? 'active' : ''}" onclick="toggleLike('${item.id}', this)">Like</span>
-                    <span class="dislike-btn ${item.disliked ? 'active' : ''}" onclick="toggleDislike('${item.id}', this)">Dismiss</span>
-                    <input type="text" class="thought-input" placeholder="Note..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
-                </div>`;
-            feed.appendChild(card);
-        });
-        observeCards();
-    }
 
     async function loadFeed() {
-        const { data, error } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
-        if (!error) renderFeed(data);
+        const { data } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
+        renderFeed(data, 'feed');
+        updateStatus("Stream Restored", 2000);
+    }
+
+    function renderFeed(data, mode) {
+        const feed = document.getElementById('feed');
+        feed.innerHTML = '';
+        feed.className = (mode === 'grid') ? 'grid-view' : 'container';
+        
+        data.forEach(item => {
+            const el = document.createElement('div');
+            if (mode === 'grid') {
+                el.className = 'thumbnail';
+                el.innerHTML = item.prompt.substring(0, 50) + "...";
+                el.onclick = () => openSpecificPost(item.id);
+            } else {
+                el.className = 'card';
+                el.setAttribute('data-id', item.id);
+                el.innerHTML = `
+                    ${item.dwell_time_ms > 0 ? '<div class="seen-dot">REVISITED</div>' : ''}
+                    <div class="prompt">${item.prompt}</div>
+                    <div class="bridge-container">
+                        <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
+                        <div class="bridge">${item.bridge}</div>
+                    </div>
+                    <div class="controls">
+                        <span class="like-btn ${item.liked ? 'active' : ''}" onclick="toggleLike('${item.id}', this)">Like</span>
+                        <span class="dislike-btn" onclick="toggleDislike('${item.id}', this)">Dismiss</span>
+                    </div>`;
+            }
+            feed.appendChild(el);
+        });
+        if (mode === 'feed') observeCards();
+    }
+
+    function goHome() {
+        const feed = document.getElementById('feed');
+        if (feed.classList.contains('grid-view')) {
+            loadFeed();
+        } else {
+            feed.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     }
 
     async function showSavedHub() {
-        const status = document.getElementById('algo-status');
-        status.innerText = "Opening Saved Hub...";
-        const { data, error } = await _supabase.from('posts').select('*').eq('liked', true).order('created_at', { ascending: false });
-        if (!error && data.length > 0) {
-            renderFeed(data);
-            status.innerText = "Viewing Saved";
-        } else {
-            status.innerText = "No saved posts yet.";
-        }
+        updateStatus("Opening Hub...");
+        const { data } = await _supabase.from('posts').select('*').eq('liked', true).order('created_at', { ascending: false });
+        renderFeed(data, 'grid');
+        updateStatus("Saved Collection", 3000);
     }
 
-    async function toggleLike(id, el) {
-        const isActive = el.classList.contains('active');
-        el.classList.toggle('active');
-        await _supabase.from('posts').update({ liked: !isActive }).eq('id', id);
+    async function openSpecificPost(id) {
+        const { data } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
+        renderFeed(data, 'feed');
+        setTimeout(() => {
+            const target = document.querySelector(`[data-id="${id}"]`);
+            if (target) target.scrollIntoView();
+        }, 100);
     }
 
-    async function toggleDislike(id, el) {
-        const isDisliked = el.classList.contains('active');
-        el.classList.toggle('active');
-        await _supabase.from('posts').update({ disliked: !isDisliked }).eq('id', id);
-        if (!isDisliked) el.closest('.card').style.opacity = '0.3';
+    function updateStatus(msg, delay) {
+        const s = document.getElementById('algo-status');
+        s.innerText = msg;
+        if (delay) setTimeout(() => s.innerText = "Ready", delay);
     }
 
-    async function saveComment(id, val) {
-        await _supabase.from('posts').update({ comment: val }).eq('id', id);
-    }
-
-    async function triggerTestCook() {
-        const status = document.getElementById('algo-status');
-        status.innerText = "Analyzing vibe...";
-        const { data: history } = await _supabase.from('posts').select('prompt, category, liked, comment').or('liked.eq.true,comment.neq.null').order('created_at', { ascending: false }).limit(50);
-        const contextString = history.length > 0 ? JSON.stringify(history) : "Start with general logic and sensory prompts.";
-        
-        try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile", // Switched to high-reasoning Llama 3.3
-                    messages: [{ role: "user", content: `User Context: ${contextString}. Generate 3 new 'Mind-as-Generator' cards. Return ONLY JSON: {"posts": [{"prompt": "...", "bridge": "...", "category": "..."}]}` }],
-                    response_format: { type: "json_object" }
-                })
-            });
-            const result = await response.json();
-            const newPosts = JSON.parse(result.choices[0].message.content).posts;
-            await _supabase.from('posts').insert(newPosts);
-            location.reload();
-        } catch (e) { status.innerText = "Error cooking."; }
-    }
-
-    // Smart Timer: Pause when user leaves the app or locks phone
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden && activeCardId) {
-            totalDwellTime += (Date.now() - viewStart);
-        } else if (activeCardId) {
-            viewStart = Date.now();
-        }
-    });
+    // ... (Keep your toggleLike, toggleDislike, and triggerTestCook logic from previous messages) ...
 
     function observeCards() {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(async entry => {
-                const cardId = entry.target.getAttribute('data-id');
+                const id = entry.target.getAttribute('data-id');
                 if (entry.isIntersecting) {
                     viewStart = Date.now();
-                    totalDwellTime = 0;
-                    activeCardId = cardId;
+                    activeCardId = id;
                     entry.target.querySelector('.prompt').classList.add('visible');
-                } else if (activeCardId === cardId) {
-                    const finalTime = totalDwellTime + (Date.now() - viewStart);
-                    if (finalTime > 2000) {
-                        await _supabase.from('posts').update({ dwell_time_ms: finalTime }).eq('id', cardId);
-                    }
+                } else if (activeCardId === id) {
+                    const time = Date.now() - viewStart;
+                    if (time > 2000) await _supabase.from('posts').update({ dwell_time_ms: time }).eq('id', id);
                     activeCardId = null;
                 }
             });
