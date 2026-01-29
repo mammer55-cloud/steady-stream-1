@@ -73,9 +73,7 @@ def cook_content():
     
     ## Stylistic DNA:
     Draw from: sensory physics, information theory, constraint satisfaction, temporal mechanics, spatial reasoning, pattern recognition, boundary conditions, emergence, conservation laws.
-    
-    Avoid: metaphysical claims, spiritual language, self-help tone, inspirational messaging.
-    
+        
     ## Output Format:
     Return ONLY valid JSON:
     {{"posts": [{{"prompt": "...", "bridge": "...", "category": "..."}}]}}
