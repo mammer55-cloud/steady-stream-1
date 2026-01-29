@@ -13,12 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Hard-Code Secrets into index.html
+      - name: Force Injection
         run: |
-          # We use | as a delimiter because your URL has / in it
-          sed -i "s|SET_BY_GITHUB_ACTIONS_URL|${{ secrets.SUPABASE_URL }}|g" index.html
-          sed -i "s|SET_BY_GITHUB_ACTIONS_KEY|${{ secrets.SUPABASE_KEY }}|g" index.html
-          sed -i "s|SET_BY_GITHUB_ACTIONS_GROQ|${{ secrets.GROQ_API_KEY }}|g" index.html
+          sed -i "s|UK_WILDCATS_URL|${{ secrets.SUPABASE_URL }}|g" index.html
+          sed -i "s|UK_WILDCATS_KEY|${{ secrets.SUPABASE_KEY }}|g" index.html
+          sed -i "s|UK_WILDCATS_GROQ|${{ secrets.GROQ_API_KEY }}|g" index.html
 
       - name: Push to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
