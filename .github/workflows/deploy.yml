@@ -13,18 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Inject Secrets
-        shell: bash
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      - name: Hard-Code Secrets into index.html
         run: |
-          # Create a temporary file with secrets injected
-          envsubst < index.html > index_temp.html
-          mv index_temp.html index.html
+          # We use | as a delimiter because your URL has / in it
+          sed -i "s|SET_BY_GITHUB_ACTIONS_URL|${{ secrets.SUPABASE_URL }}|g" index.html
+          sed -i "s|SET_BY_GITHUB_ACTIONS_KEY|${{ secrets.SUPABASE_KEY }}|g" index.html
+          sed -i "s|SET_BY_GITHUB_ACTIONS_GROQ|${{ secrets.GROQ_API_KEY }}|g" index.html
 
-      - name: Deploy to GitHub Pages
+      - name: Push to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .
