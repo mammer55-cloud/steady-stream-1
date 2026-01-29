@@ -389,11 +389,14 @@
     </nav>
 
 <script>
-    // SECURITY FIX: Use Cloudflare Worker proxy instead of exposing keys
+    // SECURITY FIX: Worker URL for Groq API proxy (Supabase still uses direct connection with RLS)
     const WORKER_URL = "steady-stream-api.mammergaming55.workers.dev"; // Replace with your Cloudflare Worker URL
     
+    // These get replaced by GitHub Actions during deployment
     const SUPABASE_URL = "UK_WILDCATS_URL";
     const SUPABASE_KEY = "UK_WILDCATS_KEY";
+    const GROQ_KEY = "UK_WILDCATS_GROQ"; // Still needed for direct calls if Worker not set up yet
+    
     const { createClient } = supabase;
     const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -573,17 +576,33 @@
         try {
             showStatus("Generating new posts...", 0);
             
-            // SECURITY FIX: Use Cloudflare Worker proxy instead of direct Groq API call
-            const response = await fetch(`${WORKER_URL}/api/generate`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    history: history,
-                    contextString: contextString
-                })
-            });
+            // Use Worker proxy if configured, otherwise use direct API call
+            let result;
+            if (WORKER_URL && WORKER_URL !== "WORKER_URL_HERE") {
+                // SECURE: Use Cloudflare Worker proxy
+                const response = await fetch(`${WORKER_URL}/api/generate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        history: history,
+                        contextString: contextString
+                    })
+                });
+                result = await response.json();
+            } else {
+                // FALLBACK: Direct API call (less secure, but works for testing)
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [{ role: "user", content: `User Context: ${contextString}. Generate 3 new 'Mind-as-Generator' cards. Return ONLY JSON: {"posts": [{"prompt": "...", "bridge": "...", "category": "..."}]}` }],
+                        response_format: { type: "json_object" }
+                    })
+                });
+                result = await response.json();
+            }
             
-            const result = await response.json();
             const newPosts = JSON.parse(result.choices[0].message.content).posts;
             await _supabase.from('posts').insert(newPosts);
             
