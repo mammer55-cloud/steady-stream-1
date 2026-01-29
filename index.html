@@ -32,9 +32,11 @@
 
 <script>
     // --- placeholders to be replaced by GitHub Actions ---
-    const SUPABASE_URL = "PROD_SUPABASE_URL";
-    const SUPABASE_KEY = "PROD_SUPABASE_KEY";
-    const GROQ_KEY = "PROD_GROQ_KEY";
+// --- placeholders to be replaced by GitHub Actions ---
+// --- placeholders to be replaced by GitHub Actions ---
+    const SUPABASE_URL = "SET_BY_GITHUB_ACTIONS_URL";
+    const SUPABASE_KEY = "SET_BY_GITHUB_ACTIONS_KEY";
+    const GROQ_KEY = "SET_BY_GITHUB_ACTIONS_GROQ";
 
     const { createClient } = supabase;
     const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -81,10 +83,10 @@
         try {
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
+                headers: { "Authorization": `Bearer `, "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    messages: [{ role: "user", content: `User Context: ${contextString}. Generate 3 new 'Mind-as-Generator' cards. Return ONLY JSON: {"posts": [{"prompt": "...", "bridge": "...", "category": "..."}]}` }],
+                    messages: [{ role: "user", content: `User Context: . Generate 3 new 'Mind-as-Generator' cards. Return ONLY JSON: {"posts": [{"prompt": "...", "bridge": "...", "category": "..."}]}` }],
                     response_format: { type: "json_object" }
                 })
             });
