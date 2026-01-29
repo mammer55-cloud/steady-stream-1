@@ -73,11 +73,15 @@
             max-width: 600px; 
             margin-bottom: 2rem; 
             opacity: 0; 
-            transition: opacity 1.2s ease-in; 
+            transition: opacity 0.4s ease-in; 
         }
 
         .prompt.visible { 
             opacity: 1; 
+        }
+
+        .prompt.instant {
+            transition: none;
         }
 
         .bridge-container { 
@@ -218,6 +222,32 @@
             color: var(--bg);
         }
 
+        /* Status message above nav bar */
+        .status-message {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--accent);
+            padding: 10px 20px;
+            border-radius: 20px;
+            background: rgba(255, 245, 230, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--accent);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .status-message.visible {
+            opacity: 1;
+        }
+
         /* Thumbnail Gallery for Saved Posts */
         .gallery-container {
             display: none;
@@ -328,6 +358,8 @@
         <div id="overlay-content"></div>
     </div>
 
+    <div class="status-message" id="statusMsg"></div>
+
     <div class="bottom-nav">
         <button class="nav-btn active" onclick="loadFeed()">Home</button>
         <button class="nav-btn" onclick="showSavedHub()">Saved</button>
@@ -348,8 +380,24 @@
     let totalDwellTime = 0;
     let currentView = 'feed';
 
+    // Helper to show status messages
+    function showStatus(message, duration = 3000) {
+        const statusMsg = document.getElementById('statusMsg');
+        statusMsg.textContent = message;
+        statusMsg.classList.add('visible');
+        if (duration > 0) {
+            setTimeout(() => {
+                statusMsg.classList.remove('visible');
+            }, duration);
+        }
+    }
+
+    function hideStatus() {
+        document.getElementById('statusMsg').classList.remove('visible');
+    }
+
     // Helper to render feed view
-    function renderFeed(data) {
+    function renderFeed(data, instantShow = false) {
         const feed = document.getElementById('feed');
         feed.innerHTML = '';
         data.forEach(item => {
@@ -363,7 +411,7 @@
             
             card.innerHTML = `
                 ${seenBadge}
-                <div class="prompt">${item.prompt}</div>
+                <div class="prompt ${instantShow ? 'visible instant' : ''}">${item.prompt}</div>
                 <div class="bridge-container">
                     <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
                     <div class="bridge">${item.bridge}</div>
@@ -414,7 +462,7 @@
             card.setAttribute('data-id', item.id);
             
             card.innerHTML = `
-                <div class="prompt visible">${item.prompt}</div>
+                <div class="prompt visible instant">${item.prompt}</div>
                 <div class="bridge-container">
                     <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
                     <div class="bridge">${item.bridge}</div>
@@ -428,11 +476,13 @@
         
         overlay.classList.add('active');
         
-        // Scroll to the clicked post
+        // Scroll to the clicked post instantly (no animation)
         setTimeout(() => {
             const targetCard = content.querySelector(`[data-id="${startId}"]`);
-            if (targetCard) targetCard.scrollIntoView();
-        }, 100);
+            if (targetCard) {
+                targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+            }
+        }, 10);
     }
 
     function closeOverlay() {
@@ -450,9 +500,11 @@
         
         const { data, error } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
         if (!error) {
-            renderFeed(data);
-            // Scroll to top
-            document.getElementById('feed').scrollTo({ top: 0, behavior: 'smooth' });
+            renderFeed(data, true); // Pass true for instant show
+            // Scroll to top instantly
+            setTimeout(() => {
+                document.getElementById('feed').scrollTo({ top: 0, behavior: 'auto' });
+            }, 10);
         }
     }
 
@@ -491,14 +543,14 @@
     }
 
     async function triggerTestCook() {
-        // Update nav buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.nav-btn')[2].classList.add('active');
+        // Don't change the active nav button - keep it on current view
+        showStatus("Analyzing vibe...", 0); // Show indefinitely
         
         const { data: history } = await _supabase.from('posts').select('prompt, category, liked, comment').or('liked.eq.true,comment.neq.null').order('created_at', { ascending: false }).limit(50);
         const contextString = history.length > 0 ? JSON.stringify(history) : "Start with general logic and sensory prompts.";
         
         try {
+            showStatus("Generating new posts...", 0);
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
@@ -511,12 +563,17 @@
             const result = await response.json();
             const newPosts = JSON.parse(result.choices[0].message.content).posts;
             await _supabase.from('posts').insert(newPosts);
-            await loadFeed();
+            
+            showStatus("3 new posts generated!", 3000);
+            
+            // If we're on home feed, reload it
+            if (currentView === 'feed') {
+                const { data } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
+                renderFeed(data, false); // Don't show instantly for new posts
+            }
         } catch (e) { 
             console.error("Error generating posts:", e);
-            // Reset button state
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            showStatus("Error generating posts", 3000);
         }
     }
 
