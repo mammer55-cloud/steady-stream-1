@@ -16,24 +16,45 @@ def cook_content():
     print("Connecting to the algorithm...")
     
     # 1. Check for 'Liked' content to inform the algorithm
-    liked_data = supabase.table("posts").select("prompt, category").eq("liked", True).limit(5).execute()
-    user_preferences = "None yet" if not liked_data.data else str(liked_data.data)
+    history = supabase.table("posts") \
+        .select("prompt, category, liked, comment") \
+        .or("liked.eq.true,comment.not.is.null") \
+        .order("created_at", desc=True) \
+        .limit(50) \
+        .execute()
 
     # 2. Craft the prompt for Groq
     system_instruction = f"""
-    You are a low-dopamine content engine for a high-functioning user.
+    You are a content engine that creates contemplative prompts designed to shift perception.
+    
     Context of what the user likes: {user_preferences}
     
     Task: Create 10 new 'Mind-as-Generator' cards.
-    Structure: 
-    - 60% should be logical, technical, or systems-based.
-    - 40% should be sensory, memory-based, or abstract philosophy.
-    - No exclamation points. Calm tone.
-    - The 'prompt' (q) asks the user to imagine/calculate. 
-    - The 'bridge' (a) is the satisfying follow-up.
     
-    Return ONLY a valid JSON object with a key "posts" containing a list of objects:
+    ## Core Mechanism:
+    Each card has two parts that work together:
+    
+    1. **The Prompt**: Asks the user to construct something specific in their mind - a mental image, calculation, system, memory, or abstraction. The user should want to do this.
+    
+    2. **The Bridge**: Once the user has created this mental object (which only exists in their mind), the bridge reveals something about THAT specific thing they just imagined. The bridge should:
+       - Reference the exact mental object they constructed
+       - Reveal a property, implication, or perspective they didn't consider
+       - Create a perceptual shift in how they relate to what they imagined
+       - Feel like it "unlocks" something about their own mental creation
+    
+    The bridge is NOT a follow-up prompt or general wisdom. It's a specific observation about the thing they just made in their mind.
+    
+    ## Style:
+    - No exclamation points
+    - Calm, measured tone
+    - Concrete and specific, not abstract platitudes
+    - Draw from: systems thinking, physics, philosophy, memory, sensation, mathematics, time, perception
+    
+    ## Output Format:
+    Return ONLY valid JSON:
     {{"posts": [{{"prompt": "...", "bridge": "...", "category": "..."}}]}}
+    
+    Categories can be: logic, systems, sensory, memory, philosophy, mathematics, or combinations.
     """
 
     # 3. Ask Groq for the content
