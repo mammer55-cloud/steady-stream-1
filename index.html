@@ -198,8 +198,6 @@
     <div class="container" id="feed"></div>
 
 <script>
-    // --- placeholders to be replaced by GitHub Actions ---
-// --- placeholders to be replaced by GitHub Actions ---
 // --- placeholders to be replaced by GitHub Actions ---
     const SUPABASE_URL = "UK_WILDCATS_URL";
     const SUPABASE_KEY = "UK_WILDCATS_KEY";
@@ -208,15 +206,17 @@
     const { createClient } = supabase;
     const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function loadFeed() {
-        const { data, error } = await _supabase.from('posts').select('*').order('created_at', { ascending: false });
-        if (error) return;
+    let viewStart = null;
+    let activeCardId = null;
+    let totalDwellTime = 0;
+
+    // Helper to render any data set (Home or Saved)
+    function renderFeed(data) {
         const feed = document.getElementById('feed');
         feed.innerHTML = '';
         data.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
-            // We add data-id here so the observer knows which card you are looking at
             card.setAttribute('data-id', item.id); 
             card.innerHTML = `
                 <div class="prompt">${item.prompt}</div>
@@ -234,35 +234,34 @@
         observeCards();
     }
 
-    async function toggleLike(id, el) {
-        const isLiked = el.innerText === '❤️';
-        el.innerText = isLiked ? '♡' : '❤️';
-        await _supabase.from('posts').update({ liked: !isLiked }).eq('id', id);
-    }
-
-    async function toggleDislike(id, el) {
-        const isDisliked = el.classList.contains('active');
-        el.classList.toggle('active');
-        // This physically triggers the change in your Supabase 'disliked' column
-        await _supabase.from('posts').update({ disliked: !isDisliked }).eq('id', id);
-        if (!isDisliked) el.closest('.card').style.opacity = '0.3'; // Visual feedback
+    async function loadFeed() {
+        const { data, error } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
+        if (!error) renderFeed(data);
     }
 
     async function showSavedHub() {
         const status = document.getElementById('algo-status');
         status.innerText = "Opening Saved Hub...";
-        const { data, error } = await _supabase
-            .from('posts')
-            .select('*')
-            .eq('liked', true)
-            .order('created_at', { ascending: false });
-        
-        if (data.length > 0) {
-            renderFeed(data); // We'll refactor loadFeed to use a generic renderer
+        const { data, error } = await _supabase.from('posts').select('*').eq('liked', true).order('created_at', { ascending: false });
+        if (!error && data.length > 0) {
+            renderFeed(data);
             status.innerText = "Viewing Saved";
         } else {
             status.innerText = "No saved posts yet.";
         }
+    }
+
+    async function toggleLike(id, el) {
+        const isActive = el.classList.contains('active');
+        el.classList.toggle('active');
+        await _supabase.from('posts').update({ liked: !isActive }).eq('id', id);
+    }
+
+    async function toggleDislike(id, el) {
+        const isDisliked = el.classList.contains('active');
+        el.classList.toggle('active');
+        await _supabase.from('posts').update({ disliked: !isDisliked }).eq('id', id);
+        if (!isDisliked) el.closest('.card').style.opacity = '0.3';
     }
 
     async function saveComment(id, val) {
@@ -272,13 +271,7 @@
     async function triggerTestCook() {
         const status = document.getElementById('algo-status');
         status.innerText = "Analyzing vibe...";
-// Add the .order part so it sees your LATEST comments
-        const { data: history } = await _supabase
-            .from('posts')
-            .select('prompt, category, liked, comment')
-            .or('liked.eq.true,comment.neq.null')
-            .order('created_at', { ascending: false }) // This is the missing piece
-            .limit(50);        
+        const { data: history } = await _supabase.from('posts').select('prompt, category, liked, comment').or('liked.eq.true,comment.neq.null').order('created_at', { ascending: false }).limit(50);
         const contextString = history.length > 0 ? JSON.stringify(history) : "Start with general logic and sensory prompts.";
         
         try {
@@ -286,7 +279,7 @@
                 method: "POST",
                 headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "qwen/qwen3-32b",
+                    model: "llama-3.3-70b-versatile", // Switched to high-reasoning Llama 3.3
                     messages: [{ role: "user", content: `User Context: ${contextString}. Generate 3 new 'Mind-as-Generator' cards. Return ONLY JSON: {"posts": [{"prompt": "...", "bridge": "...", "category": "..."}]}` }],
                     response_format: { type: "json_object" }
                 })
@@ -298,21 +291,30 @@
         } catch (e) { status.innerText = "Error cooking."; }
     }
 
-    let viewStart = null;
-    let activeCardId = null;
+    // Smart Timer: Pause when user leaves the app or locks phone
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden && activeCardId) {
+            totalDwellTime += (Date.now() - viewStart);
+        } else if (activeCardId) {
+            viewStart = Date.now();
+        }
+    });
 
     function observeCards() {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(async entry => {
+                const cardId = entry.target.getAttribute('data-id');
                 if (entry.isIntersecting) {
-                    // Entering a new card
                     viewStart = Date.now();
-                    activeCardId = entry.target.dataset.id;
+                    totalDwellTime = 0;
+                    activeCardId = cardId;
                     entry.target.querySelector('.prompt').classList.add('visible');
-                } else if (activeCardId === entry.target.dataset.id) {
-                    // Leaving the card - save the time
-                    const timeSpent = Date.now() - viewStart;
-                    await _supabase.from('posts').update({ dwell_time_ms: timeSpent }).eq('id', activeCardId);
+                } else if (activeCardId === cardId) {
+                    const finalTime = totalDwellTime + (Date.now() - viewStart);
+                    if (finalTime > 2000) {
+                        await _supabase.from('posts').update({ dwell_time_ms: finalTime }).eq('id', cardId);
+                    }
+                    activeCardId = null;
                 }
             });
         }, { threshold: 0.8 });
