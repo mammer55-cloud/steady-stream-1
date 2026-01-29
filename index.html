@@ -32,9 +32,10 @@
 
 <script>
     // --- placeholders to be replaced by GitHub Actions ---
-    const SUPABASE_URL = "PROD_SUPABASE_URL";
-    const SUPABASE_KEY = "PROD_SUPABASE_KEY";
-    const GROQ_KEY = "PROD_GROQ_KEY";
+// --- placeholders to be replaced by GitHub Actions ---
+    const SUPABASE_URL = "$SUPABASE_URL";
+    const SUPABASE_KEY = "$SUPABASE_KEY";
+    const GROQ_KEY = "$GROQ_API_KEY";
 
     const { createClient } = supabase;
     const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
