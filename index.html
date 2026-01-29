@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Steady Stream V1</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
         :root { 
             /* A deep, warm cream palette mimicking maxed Night Shift */
@@ -97,343 +98,539 @@
             color: var(--accent); 
             max-width: 500px; 
             opacity: 0; 
-            transition: opacity 0.6s ease-in 0.8s; 
-            margin-top: 1rem; 
+            transform: translateY(10px); 
+            transition: all 0.8s ease-out; 
+            display: none; 
         }
 
         .bridge.visible { 
             opacity: 1; 
+            transform: translateY(0); 
+            display: block; 
         }
 
-        .bridge.instant {
-            transition: none;
-        }
-
-        .actions { 
-            margin-top: 2rem; 
-            display: flex; 
-            gap: 1.5rem; 
-            align-items: center; 
-        }
-
-        .icon-btn { 
+        .ready-btn { 
             background: none; 
-            border: 2px solid var(--text); 
-            border-radius: 50%; 
-            width: 50px; 
-            height: 50px; 
-            font-size: 1.2rem; 
-            color: var(--text); 
+            border: 1px solid var(--accent); 
+            color: var(--accent); 
+            padding: 12px 24px; 
             cursor: pointer; 
-            transition: all 0.2s ease; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-        }
-
-        .icon-btn:active { 
-            transform: scale(0.95); 
-        }
-
-        .icon-btn.liked {
-            background: var(--active-brown);
-            border-color: var(--active-brown);
-            color: white;
-        }
-
-        .icon-btn.disliked {
-            background: #333;
-            border-color: #333;
-            color: white;
-        }
-
-        .comment-area {
-            margin-top: 1rem;
-            width: 100%;
-            max-width: 500px;
-            padding: 0.75rem;
-            border: 1px solid var(--accent);
-            border-radius: 8px;
-            background: rgba(255, 245, 230, 0.5);
-            font-family: 'Times New Roman', serif;
-            font-size: 1rem;
-            color: var(--text);
-            resize: vertical;
-            min-height: 60px;
-            box-sizing: border-box;
-        }
-
-        .comment-area:focus {
-            outline: none;
-            border-color: var(--active-brown);
-        }
-
-        .bottom-nav { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
-            background: var(--bg); 
-            border-top: 1px solid var(--accent); 
-            display: flex; 
-            justify-content: space-around; 
-            padding: 1rem 0; 
-            z-index: 999;
-        }
-
-        .nav-btn { 
-            background: none; 
-            border: none; 
-            color: var(--text); 
-            font-size: 1.5rem; 
-            cursor: pointer; 
-            transition: color 0.2s ease;
-            padding: 0.5rem;
-        }
-
-        .nav-btn:active {
-            color: var(--active-brown);
-        }
-
-        .category-tag {
-            font-family: sans-serif;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--accent);
-            opacity: 0.7;
-            margin-top: 1.5rem;
-        }
-
-        /* Loading spinner */
-        .spinner {
-            border: 3px solid rgba(176, 164, 145, 0.3);
-            border-top: 3px solid var(--accent);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 2rem auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
+            border-radius: 20px; 
             font-family: sans-serif;
             font-size: 0.9rem;
-            color: var(--accent);
-            text-align: center;
-            margin-top: 1rem;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .ready-btn:hover {
+            border-color: var(--text);
+            color: var(--text);
+        }
+
+        .controls { 
+            position: absolute; 
+            bottom: 120px; 
+            display: flex; 
+            gap: 30px; 
+            align-items: center; 
+        }
+
+        .like-btn, .dislike-btn { 
+            font-family: sans-serif; 
+            font-size: 0.75rem; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: opacity 0.3s ease, color 0.3s ease;
+            user-select: none;
+        }
+
+        .like-btn.active { 
+            opacity: 1; 
+            color: var(--active-brown); 
+            font-weight: bold;
+        }
+
+        .dislike-btn:hover {
+            opacity: 1;
+        }
+
+        .dislike-btn.active { color: #a94442; opacity: 1; }
+
+        .thought-input { 
+            border: none; 
+            border-bottom: 1px solid var(--accent); 
+            background: none; 
+            padding: 8px; 
+            font-size: 0.85rem; 
+            width: 160px; 
+            text-align: center; 
+            color: var(--text);
+            font-family: 'Times New Roman', serif;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .thought-input:focus {
+            opacity: 1;
+            border-bottom-color: var(--text);
+        }
+
+        /* Bottom Navigation Bar - iPhone style */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(255, 245, 230, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--accent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            z-index: 1000;
+            padding: 0 20px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-family: sans-serif;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+        }
+
+        .nav-btn:hover {
+            opacity: 1;
+            background: rgba(176, 164, 145, 0.15);
+        }
+
+        .nav-btn.active {
+            opacity: 1;
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        /* Gallery view */
+        .gallery-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 70px;
+            background: var(--bg);
+            overflow-y: auto;
+            padding: 40px 20px 20px;
+            display: none;
+        }
+
+        .gallery-view.active {
+            display: block;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .thumbnail {
+            background: rgba(255, 245, 230, 0.5);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .thumbnail:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-color: var(--text);
+        }
+
+        .thumbnail-prompt {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text);
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+        }
+
+        .thumbnail-note {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--active-brown);
+            opacity: 0.7;
+        }
+
+        /* Fullscreen overlay for viewing saved posts */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .overlay-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(255, 245, 230, 0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--accent);
+            z-index: 2001;
+        }
+
+        .close-btn {
+            position: absolute;
+            left: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text);
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .overlay-content {
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Status message */
+        .status-msg {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--active-brown);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-family: sans-serif;
+            font-size: 0.85rem;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-msg.visible {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .prompt { font-size: 1.4rem; }
+            .bridge { font-size: 1rem; }
+            .controls { gap: 20px; }
         }
 </style>
 </head>
 <body>
+    <div class="status-msg" id="statusMsg"></div>
+    
     <div class="container" id="feed"></div>
+    
+    <div class="gallery-view" id="gallery"></div>
+    
+    <div class="overlay" id="overlay">
+        <div class="overlay-header">
+            <button class="close-btn" onclick="closeOverlay()">✕</button>
+        </div>
+        <div class="overlay-content" id="overlay-content"></div>
+    </div>
+
     <nav class="bottom-nav">
-        <button class="nav-btn" onclick="switchView('stream')" title="Stream">∞</button>
-        <button class="nav-btn" onclick="switchView('starred')" title="Starred">★</button>
-        <button class="nav-btn" onclick="generateNewContent()" title="Generate">⚡</button>
+        <button class="nav-btn active" onclick="loadFeed()">Home</button>
+        <button class="nav-btn" onclick="showSavedHub()">Saved</button>
+        <button class="nav-btn" onclick="triggerTestCook()">Cook</button>
     </nav>
 
 <script>
-    // SECURE: No API keys exposed! All requests go through your Cloudflare Worker
-    const API_BASE = 'steady-stream-api.mammergaming55.workers.dev'; // Replace with your Cloudflare Worker URL
+    // SECURITY FIX: Use Cloudflare Worker proxy instead of exposing keys
+    const WORKER_URL = "WORKER_URL_HERE"; // Replace with your Cloudflare Worker URL
+    
+    const SUPABASE_URL = "UK_WILDCATS_URL";
+    const SUPABASE_KEY = "UK_WILDCATS_KEY";
+    const { createClient } = supabase;
+    const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let posts = [];
-    let currentView = 'stream';
-    let dwellTimers = new Map();
+    let activeCardId = null;
+    let viewStart = 0;
+    let totalDwellTime = 0;
+    let currentView = 'feed';
 
-    // Secure API wrapper
-    const api = {
-        async supabase(operation, table, options = {}) {
-            const response = await fetch(`${API_BASE}/api/supabase`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ operation, table, ...options })
-            });
-            return await response.json();
-        },
-
-        async generate(history) {
-            const response = await fetch(`${API_BASE}/api/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ history })
-            });
-            return await response.json();
+    function showStatus(msg, duration = 3000) {
+        const statusEl = document.getElementById('statusMsg');
+        statusEl.textContent = msg;
+        statusEl.classList.add('visible');
+        if (duration > 0) {
+            setTimeout(() => {
+                hideStatus();
+            }, duration);
         }
-    };
-
-    async function loadPosts() {
-        const { data } = await api.supabase('select', 'posts', {
-            filters: { disliked: false }
-        });
-        posts = data || [];
-        renderFeed();
     }
 
-    async function loadStarred() {
-        const { data } = await api.supabase('select', 'posts', {
-            filters: { liked: true }
-        });
-        posts = data || [];
-        renderFeed();
+    function hideStatus() {
+        document.getElementById('statusMsg').classList.remove('visible');
     }
 
-    function renderFeed() {
+    // Helper to render feed view
+    function renderFeed(data, instantShow = false) {
         const feed = document.getElementById('feed');
         feed.innerHTML = '';
-
-        if (posts.length === 0) {
-            feed.innerHTML = `
-                <div class="card">
-                    <div class="prompt visible instant">No posts yet. Tap ⚡ to generate content.</div>
-                </div>
-            `;
-            return;
-        }
-
-        posts.forEach((post, index) => {
+        data.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
-            card.dataset.id = post.id;
-
-            const seenBadge = post.seen ? '<div class="seen-badge">Seen</div>' : '';
-
+            card.setAttribute('data-id', item.id);
+            
+            const seenBadge = item.dwell_time_ms && item.dwell_time_ms > 0 
+                ? '<div class="seen-badge">Seen</div>' 
+                : '';
+            
             card.innerHTML = `
                 ${seenBadge}
-                <div class="prompt">${post.prompt}</div>
+                <div class="prompt ${instantShow ? 'visible instant' : ''}">${item.prompt}</div>
                 <div class="bridge-container">
-                    <div class="bridge">${post.bridge}</div>
+                    <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
+                    <div class="bridge">${item.bridge}</div>
                 </div>
-                <div class="category-tag">${post.category || 'uncategorized'}</div>
-                <div class="actions">
-                    <button class="icon-btn ${post.liked ? 'liked' : ''}" onclick="toggleLike(${post.id})">★</button>
-                    <button class="icon-btn ${post.disliked ? 'disliked' : ''}" onclick="toggleDislike(${post.id})">✕</button>
-                </div>
-                <textarea class="comment-area" 
-                          placeholder="Add a note..." 
-                          onblur="saveComment(${post.id}, this.value)">${post.comment || ''}</textarea>
-            `;
-
+                <div class="controls">
+                    <span class="like-btn ${item.liked ? 'active' : ''}" onclick="toggleLike('${item.id}', this)">Like</span>
+                    <span class="dislike-btn ${item.disliked ? 'active' : ''}" onclick="toggleDislike('${item.id}', this)">Dismiss</span>
+                    <input type="text" class="thought-input" placeholder="Note..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
+                </div>`;
             feed.appendChild(card);
-
-            // Animation timing
-            setTimeout(() => {
-                card.querySelector('.prompt').classList.add('visible');
-                card.querySelector('.bridge').classList.add('visible');
-            }, 100 * index);
         });
-
-        setupScrollTracking();
+        observeCards();
     }
 
-    function setupScrollTracking() {
-        const container = document.querySelector('.container');
-        const cards = document.querySelectorAll('.card');
+    // Render thumbnail gallery
+    function renderGallery(data) {
+        const gallery = document.getElementById('gallery');
+        const grid = document.createElement('div');
+        grid.className = 'gallery-grid';
+        
+        data.forEach(item => {
+            const thumb = document.createElement('div');
+            thumb.className = 'thumbnail';
+            thumb.onclick = () => openOverlay(item.id);
+            
+            const noteIndicator = item.comment ? '<div class="thumbnail-note">Has note</div>' : '';
+            
+            thumb.innerHTML = `
+                <div class="thumbnail-prompt">${item.prompt}</div>
+                ${noteIndicator}
+            `;
+            grid.appendChild(thumb);
+        });
+        
+        gallery.innerHTML = '';
+        gallery.appendChild(grid);
+    }
 
+    async function openOverlay(startId) {
+        const { data } = await _supabase.from('posts').select('*').eq('liked', true).order('created_at', { ascending: false });
+        const overlay = document.getElementById('overlay');
+        const content = document.getElementById('overlay-content');
+        content.innerHTML = '';
+        
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('data-id', item.id);
+            
+            card.innerHTML = `
+                <div class="prompt visible instant">${item.prompt}</div>
+                <div class="bridge-container">
+                    <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
+                    <div class="bridge">${item.bridge}</div>
+                </div>
+                <div class="controls">
+                    <span class="like-btn active" onclick="toggleLike('${item.id}', this)">Unlike</span>
+                    <input type="text" class="thought-input" placeholder="Note..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
+                </div>`;
+            content.appendChild(card);
+        });
+        
+        overlay.classList.add('active');
+        
+        // Scroll to the clicked post instantly (no animation)
+        setTimeout(() => {
+            const targetCard = content.querySelector(`[data-id="${startId}"]`);
+            if (targetCard) {
+                targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+            }
+        }, 10);
+    }
+
+    function closeOverlay() {
+        document.getElementById('overlay').classList.remove('active');
+    }
+
+    async function loadFeed() {
+        currentView = 'feed';
+        document.getElementById('feed').style.display = 'block';
+        document.getElementById('gallery').classList.remove('active');
+        
+        // Update nav buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.nav-btn')[0].classList.add('active');
+        
+        const { data, error } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
+        if (!error) {
+            renderFeed(data, true); // Pass true for instant show
+            // Scroll to top instantly
+            setTimeout(() => {
+                document.getElementById('feed').scrollTo({ top: 0, behavior: 'auto' });
+            }, 10);
+        }
+    }
+
+    async function showSavedHub() {
+        currentView = 'gallery';
+        document.getElementById('feed').style.display = 'none';
+        document.getElementById('gallery').classList.add('active');
+        
+        // Update nav buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.nav-btn')[1].classList.add('active');
+        
+        const { data, error } = await _supabase.from('posts').select('*').eq('liked', true).order('created_at', { ascending: false });
+        if (!error && data.length > 0) {
+            renderGallery(data);
+        } else {
+            document.getElementById('gallery').innerHTML = '<div style="text-align: center; padding: 50px; color: var(--accent);">No saved posts yet.</div>';
+        }
+    }
+
+    async function toggleLike(id, el) {
+        const isActive = el.classList.contains('active');
+        el.classList.toggle('active');
+        await _supabase.from('posts').update({ liked: !isActive }).eq('id', id);
+    }
+
+    async function toggleDislike(id, el) {
+        const isDisliked = el.classList.contains('active');
+        el.classList.toggle('active');
+        await _supabase.from('posts').update({ disliked: !isDisliked }).eq('id', id);
+        if (!isDisliked) el.closest('.card').style.opacity = '0.3';
+    }
+
+    async function saveComment(id, val) {
+        await _supabase.from('posts').update({ comment: val }).eq('id', id);
+    }
+
+    async function triggerTestCook() {
+        // Don't change the active nav button - keep it on current view
+        showStatus("Analyzing vibe...", 0); // Show indefinitely
+        
+        const { data: history } = await _supabase.from('posts').select('prompt, category, liked, comment').or('liked.eq.true,comment.neq.null').order('created_at', { ascending: false }).limit(50);
+        const contextString = history.length > 0 ? JSON.stringify(history) : "Start with general logic and sensory prompts.";
+        
+        try {
+            showStatus("Generating new posts...", 0);
+            
+            // SECURITY FIX: Use Cloudflare Worker proxy instead of direct Groq API call
+            const response = await fetch(`${WORKER_URL}/api/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    history: history,
+                    contextString: contextString
+                })
+            });
+            
+            const result = await response.json();
+            const newPosts = JSON.parse(result.choices[0].message.content).posts;
+            await _supabase.from('posts').insert(newPosts);
+            
+            showStatus("3 new posts generated!", 3000);
+            
+            // If we're on home feed, reload it
+            if (currentView === 'feed') {
+                const { data } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
+                renderFeed(data, false); // Don't show instantly for new posts
+            }
+        } catch (e) { 
+            console.error("Error generating posts:", e);
+            showStatus("Error generating posts", 3000);
+        }
+    }
+
+    // Smart Timer: Pause when user leaves the app or locks phone
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden && activeCardId) {
+            totalDwellTime += (Date.now() - viewStart);
+        } else if (activeCardId) {
+            viewStart = Date.now();
+        }
+    });
+
+    function observeCards() {
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const cardId = parseInt(entry.target.dataset.id);
-                if (!cardId) return;
-
+            entries.forEach(async entry => {
+                const cardId = entry.target.getAttribute('data-id');
                 if (entry.isIntersecting) {
-                    const startTime = Date.now();
-                    dwellTimers.set(cardId, startTime);
-                } else {
-                    const startTime = dwellTimers.get(cardId);
-                    if (startTime) {
-                        const dwellTime = Date.now() - startTime;
-                        api.supabase('update', 'posts', {
-                            filters: { id: cardId },
-                            updates: { dwell_time_ms: dwellTime, seen: true }
-                        });
-                        dwellTimers.delete(cardId);
+                    viewStart = Date.now();
+                    totalDwellTime = 0;
+                    activeCardId = cardId;
+                    entry.target.querySelector('.prompt').classList.add('visible');
+                } else if (activeCardId === cardId) {
+                    const finalTime = totalDwellTime + (Date.now() - viewStart);
+                    if (finalTime > 2000) {
+                        await _supabase.from('posts').update({ dwell_time_ms: finalTime }).eq('id', cardId);
                     }
+                    activeCardId = null;
                 }
             });
-        }, { threshold: 0.75 });
-
-        cards.forEach(card => observer.observe(card));
+        }, { threshold: 0.8 });
+        document.querySelectorAll('.card').forEach(card => observer.observe(card));
     }
 
-    async function toggleLike(id) {
-        const post = posts.find(p => p.id === id);
-        const newState = !post.liked;
-        await api.supabase('update', 'posts', {
-            filters: { id },
-            updates: { liked: newState }
-        });
-        post.liked = newState;
-        renderFeed();
-    }
-
-    async function toggleDislike(id) {
-        const post = posts.find(p => p.id === id);
-        const newState = !post.disliked;
-        await api.supabase('update', 'posts', {
-            filters: { id },
-            updates: { disliked: newState }
-        });
-        if (currentView === 'stream') {
-            posts = posts.filter(p => p.id !== id);
-        }
-        renderFeed();
-    }
-
-    async function saveComment(id, value) {
-        await api.supabase('update', 'posts', {
-            filters: { id },
-            updates: { comment: value }
-        });
-    }
-
-    async function generateNewContent() {
-        const feed = document.getElementById('feed');
-        feed.innerHTML = `
-            <div class="card">
-                <div class="spinner"></div>
-                <div class="loading-text">Cooking new content...</div>
-            </div>
-        `;
-
-        try {
-            const { data: history } = await api.supabase('select', 'posts', {
-                filters: {} // Get all posts for history
-            });
-
-            const response = await api.generate(history || []);
-            const newData = JSON.parse(response.choices[0].message.content);
-            const newPosts = newData.posts || [];
-
-            if (newPosts.length > 0) {
-                await api.supabase('insert', 'posts', { data: newPosts });
-                await loadPosts();
-            }
-        } catch (error) {
-            console.error('Generation failed:', error);
-            feed.innerHTML = `
-                <div class="card">
-                    <div class="prompt visible instant">Generation failed. Please try again.</div>
-                </div>
-            `;
-        }
-    }
-
-    function switchView(view) {
-        currentView = view;
-        if (view === 'stream') {
-            loadPosts();
-        } else if (view === 'starred') {
-            loadStarred();
-        }
-    }
-
-    // Initial load
-    loadPosts();
+    loadFeed();
 </script>
 </body>
 </html>
