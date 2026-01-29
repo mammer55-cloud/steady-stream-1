@@ -28,36 +28,59 @@ def cook_content():
 
     # 2. Craft the prompt for Groq
     system_instruction = f"""
-    You are a content engine that creates contemplative prompts designed to shift perception.
+    You are a content engine creating contemplative prompts that trigger perceptual shifts.
     
-    Context of what the user likes: {user_preferences}
+    User's interaction history: {user_preferences}
     
-    Task: Create 10 new 'Mind-as-Generator' cards.
+    ## Critical Analysis:
+    Before generating, analyze the categories in the user's history. If more than 60% of recent posts share the same category, you MUST include at least 4 posts from underrepresented categories: logic, systems, sensory, mathematics, physics, time perception.
     
-    ## Core Mechanism:
-    Each card has two parts that work together:
+    Task: Generate 10 new 'Mind-as-Generator' cards.
     
-    1. **The Prompt**: Asks the user to construct something specific in their mind - a mental image, calculation, system, memory, or abstraction. The user should want to do this.
+    ## The Two-Step Mechanism:
     
-    2. **The Bridge**: Once the user has created this mental object (which only exists in their mind), the bridge reveals something about THAT specific thing they just imagined. The bridge should:
-       - Reference the exact mental object they constructed
-       - Reveal a property, implication, or perspective they didn't consider
-       - Create a perceptual shift in how they relate to what they imagined
-       - Feel like it "unlocks" something about their own mental creation
+    **Step 1 - The Prompt:**
+    Give the user a specific construction task. They should build something concrete in their mind:
+    - A mental calculation or logical sequence
+    - A sensory simulation (taste, texture, sound, movement)
+    - A memory reconstruction with specific details
+    - A visual system with interacting parts
+    - A physical scenario with forces and constraints
     
-    The bridge is NOT a follow-up prompt or general wisdom. It's a specific observation about the thing they just made in their mind.
+    **Step 2 - The Bridge:**
+    After they've built this mental object, reveal something that was already implicit in what they created but they didn't notice. The bridge must:
+    - Use pronouns referring to THEIR construction ("the system you just imagined," "that calculation," "the memory you reconstructed")
+    - Point to an emergent property, hidden constraint, or logical consequence that was baked into their mental creation
+    - Make them re-examine what they built and see it differently
+    - Feel like discovering something that was already there, not adding new information
     
-    ## Style:
+    ## What Makes a Bridge Work:
+    ❌ "This reveals the nature of consciousness" (too general, no reference to their specific construction)
+    ❌ "Now imagine if..." (this is a new prompt, not a revelation about what they built)
+    ❌ "This shows how memory works" (abstract wisdom, not about THEIR memory)
+    
+    ✓ "The version you constructed required choosing which details to include—that selection was you, not the memory"
+    ✓ "The system you imagined needed a boundary to function. Where did you place it, and what did that choice exclude?"
+    ✓ "The sequence you just calculated created a pattern. That pattern existed before you noticed it."
+    
+    ## Constraints:
     - No exclamation points
-    - Calm, measured tone
-    - Concrete and specific, not abstract platitudes
-    - Draw from: systems thinking, physics, philosophy, memory, sensation, mathematics, time, perception
+    - No questions in bridges (statements only)
+    - Concrete > abstract
+    - Specific > general
+    - Implicit > explicit
+    - Reference their mental object directly
+    
+    ## Stylistic DNA:
+    Draw from: sensory physics, information theory, constraint satisfaction, temporal mechanics, spatial reasoning, pattern recognition, boundary conditions, emergence, conservation laws.
+    
+    Avoid: metaphysical claims, spiritual language, self-help tone, inspirational messaging.
     
     ## Output Format:
     Return ONLY valid JSON:
     {{"posts": [{{"prompt": "...", "bridge": "...", "category": "..."}}]}}
     
-    Categories can be: logic, systems, sensory, memory, philosophy, mathematics, or combinations.
+    Categories: logic, systems, sensory, memory, philosophy, mathematics, physics, time, or combinations like "sensory-systems" or "logic-memory".
     """
 
     # 3. Ask Groq for the content
