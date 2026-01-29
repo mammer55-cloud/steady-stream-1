@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Steady Stream V1</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg: #f5f5f3; --text: #1a1a1a; --accent: #888; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Times New Roman', serif; color: var(--text); }
+        .container { height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
+        .card { height: 100vh; scroll-snap-align: start; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2.5rem; box-sizing: border-box; text-align: center; position: relative; }
+        .prompt { font-size: 1.7rem; line-height: 1.5; max-width: 600px; margin-bottom: 2rem; opacity: 0; transition: opacity 1.2s ease-in; }
+        .prompt.visible { opacity: 1; }
+        .bridge-container { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .bridge { font-family: sans-serif; font-size: 1.1rem; color: var(--accent); max-width: 500px; opacity: 0; transform: translateY(10px); transition: all 0.8s ease-out; display: none; }
+        .bridge.visible { opacity: 1; transform: translateY(0); display: block; }
+        .ready-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 12px 24px; cursor: pointer; border-radius: 20px; }
+        .controls { position: absolute; bottom: 40px; display: flex; gap: 25px; align-items: center; opacity: 0.6; }
+        .like-btn { font-size: 1.8rem; cursor: pointer; }
+        .thought-input { border: none; border-bottom: 1px solid #ccc; background: none; padding: 8px; font-size: 0.9rem; width: 150px; text-align: center; }
+        .tester-bar { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; }
+        .test-btn { background: #1a1a1a; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="tester-bar">
+        <button class="test-btn" onclick="triggerTestCook()">Test Algorithm (+3 Cards)</button>
+        <div id="algo-status" style="font-size: 10px; color: var(--accent);">Ready</div>
+    </div>
+    <div class="container" id="feed"></div>
+
+<script>
+    // --- placeholders to be replaced by GitHub Actions ---
+    const SUPABASE_URL = "";
+    const SUPABASE_KEY = "";
+    const GROQ_KEY = "";
+
+    const { createClient } = supabase;
+    const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadFeed() {
+        const { data, error } = await _supabase.from('posts').select('*').order('created_at', { ascending: false });
+        if (error) return;
+        const feed = document.getElementById('feed');
+        feed.innerHTML = '';
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="prompt">${item.prompt}</div>
+                <div class="bridge-container">
+                    <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
+                    <div class="bridge">${item.bridge}</div>
+                </div>
+                <div class="controls">
+                    <span class="like-btn" onclick="toggleLike('${item.id}', this)">${item.liked ? '❤️' : '♡'}</span>
+                    <input type="text" class="thought-input" placeholder="A thought..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
+                </div>`;
+            feed.appendChild(card);
+        });
+        observeCards();
+    }
+
+    async function toggleLike(id, el) {
+        const isLiked = el.innerText === '❤️';
+        el.innerText = isLiked ? '♡' : '❤️';
+        await _supabase.from('posts').update({ liked: !isLiked }).eq('id', id);
+    }
+
+    async function saveComment(id, val) {
+        await _supabase.from('posts').update({ comment: val }).eq('id', id);
+    }
+
+    async function triggerTestCook() {
+        const status = document.getElementById('algo-status');
+        status.innerText = "Analyzing vibe...";
+        const { data: history } = await _supabase.from('posts').select('prompt, category, liked, comment').or('liked.eq.true,comment.neq.null').limit(10);
+        const contextString = history.length > 0 ? JSON.stringify(history) : "Start with general logic and sensory prompts.";
+        
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [{ role: "user", content: `User Context: ${contextString}. Generate 3 new 'Mind-as-Generator' cards. Return ONLY JSON: {"posts": [{"prompt": "...", "bridge": "...", "category": "..."}]}` }],
+                    response_format: { type: "json_object" }
+                })
+            });
+            const result = await response.json();
+            const newPosts = JSON.parse(result.choices[0].message.content).posts;
+            await _supabase.from('posts').insert(newPosts);
+            location.reload();
+        } catch (e) { status.innerText = "Error cooking."; }
+    }
+
+    function observeCards() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if (entry.isIntersecting) entry.target.querySelector('.prompt').classList.add('visible'); });
+        }, { threshold: 0.5 });
+        document.querySelectorAll('.card').forEach(card => observer.observe(card));
+    }
+
+    loadFeed();
+</script>
+</body>
+</html>
