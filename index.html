@@ -5,22 +5,182 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Steady Stream V1</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { --bg: #f5f5f3; --text: #1a1a1a; --accent: #888; }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Times New Roman', serif; color: var(--text); }
-        .container { height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
-        .card { height: 100vh; scroll-snap-align: start; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2.5rem; box-sizing: border-box; text-align: center; position: relative; }
-        .prompt { font-size: 1.7rem; line-height: 1.5; max-width: 600px; margin-bottom: 2rem; opacity: 0; transition: opacity 1.2s ease-in; }
-        .prompt.visible { opacity: 1; }
-        .bridge-container { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .bridge { font-family: sans-serif; font-size: 1.1rem; color: var(--accent); max-width: 500px; opacity: 0; transform: translateY(10px); transition: all 0.8s ease-out; display: none; }
-        .bridge.visible { opacity: 1; transform: translateY(0); display: block; }
-        .ready-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 12px 24px; cursor: pointer; border-radius: 20px; }
-        .controls { position: absolute; bottom: 40px; display: flex; gap: 25px; align-items: center; opacity: 0.6; }
-        .like-btn { font-size: 1.8rem; cursor: pointer; }
-        .thought-input { border: none; border-bottom: 1px solid #ccc; background: none; padding: 8px; font-size: 0.9rem; width: 150px; text-align: center; }
-        .tester-bar { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; }
-        .test-btn { background: #1a1a1a; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+<style>
+        :root { 
+            /* A deep, warm cream palette mimicking maxed Night Shift */
+            --bg: #fff5e6; 
+            --text: #2e2a24; 
+            --accent: #b0a491; 
+            --active-brown: #8b4513;
+        }
+
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            overflow: hidden; 
+            background: var(--bg); 
+            font-family: 'Times New Roman', serif; 
+            color: var(--text); 
+            transition: background 0.5s ease;
+        }
+
+        .container { 
+            height: 100vh; 
+            overflow-y: scroll; 
+            scroll-snap-type: y mandatory; 
+            -webkit-overflow-scrolling: touch; 
+        }
+
+        .card { 
+            height: 100vh; 
+            scroll-snap-align: start; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 2.5rem; 
+            box-sizing: border-box; 
+            text-align: center; 
+            position: relative; 
+        }
+
+        .prompt { 
+            font-size: 1.7rem; 
+            line-height: 1.5; 
+            max-width: 600px; 
+            margin-bottom: 2rem; 
+            opacity: 0; 
+            transition: opacity 1.2s ease-in; 
+        }
+
+        .prompt.visible { 
+            opacity: 1; 
+        }
+
+        .bridge-container { 
+            min-height: 120px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        .bridge { 
+            font-family: sans-serif; 
+            font-size: 1.1rem; 
+            color: var(--accent); 
+            max-width: 500px; 
+            opacity: 0; 
+            transform: translateY(10px); 
+            transition: all 0.8s ease-out; 
+            display: none; 
+        }
+
+        .bridge.visible { 
+            opacity: 1; 
+            transform: translateY(0); 
+            display: block; 
+        }
+
+        .ready-btn { 
+            background: none; 
+            border: 1px solid var(--accent); 
+            color: var(--accent); 
+            padding: 12px 24px; 
+            cursor: pointer; 
+            border-radius: 20px; 
+            font-family: sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .ready-btn:hover {
+            border-color: var(--text);
+            color: var(--text);
+        }
+
+        .controls { 
+            position: absolute; 
+            bottom: 60px; 
+            display: flex; 
+            gap: 30px; 
+            align-items: center; 
+        }
+
+        /* Minimalist text-based buttons to replace emojis */
+        .like-btn, .dislike-btn { 
+            font-family: sans-serif; 
+            font-size: 0.75rem; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: opacity 0.3s ease, color 0.3s ease;
+            user-select: none;
+        }
+
+        .like-btn.active { 
+            opacity: 1; 
+            color: var(--active-brown); 
+            font-weight: bold;
+        }
+
+        .dislike-btn:hover {
+            opacity: 1;
+        }
+
+        .thought-input { 
+            border: none; 
+            border-bottom: 1px solid var(--accent); 
+            background: none; 
+            padding: 8px; 
+            font-size: 0.85rem; 
+            width: 160px; 
+            text-align: center; 
+            color: var(--text);
+            font-family: 'Times New Roman', serif;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .thought-input:focus {
+            opacity: 1;
+            border-bottom-color: var(--text);
+        }
+
+        .tester-bar { 
+            position: fixed; 
+            top: 15px; 
+            right: 15px; 
+            z-index: 1000; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-end; 
+        }
+
+        .test-btn { 
+            background: var(--text); 
+            color: var(--bg); 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 11px; 
+            font-family: sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        #algo-status {
+            margin-top: 5px;
+            font-family: monospace;
+            font-size: 9px;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -49,6 +209,8 @@
         data.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
+            // We add data-id here so the observer knows which card you are looking at
+            card.setAttribute('data-id', item.id); 
             card.innerHTML = `
                 <div class="prompt">${item.prompt}</div>
                 <div class="bridge-container">
@@ -56,8 +218,9 @@
                     <div class="bridge">${item.bridge}</div>
                 </div>
                 <div class="controls">
-                    <span class="like-btn" onclick="toggleLike('${item.id}', this)">${item.liked ? '❤️' : '♡'}</span>
-                    <input type="text" class="thought-input" placeholder="A thought..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
+                    <span class="like-btn ${item.liked ? 'active' : ''}" onclick="toggleLike('${item.id}', this)">Like</span>
+                    <span class="dislike-btn ${item.disliked ? 'active' : ''}" onclick="toggleDislike('${item.id}', this)">Dismiss</span>
+                    <input type="text" class="thought-input" placeholder="Note..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
                 </div>`;
             feed.appendChild(card);
         });
@@ -91,7 +254,7 @@
                 method: "POST",
                 headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
+                    model: "qwen/qwen3-32b",
                     messages: [{ role: "user", content: `User Context: ${contextString}. Generate 3 new 'Mind-as-Generator' cards. Return ONLY JSON: {"posts": [{"prompt": "...", "bridge": "...", "category": "..."}]}` }],
                     response_format: { type: "json_object" }
                 })
@@ -103,10 +266,24 @@
         } catch (e) { status.innerText = "Error cooking."; }
     }
 
+    let viewStart = null;
+    let activeCardId = null;
+
     function observeCards() {
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => { if (entry.isIntersecting) entry.target.querySelector('.prompt').classList.add('visible'); });
-        }, { threshold: 0.5 });
+            entries.forEach(async entry => {
+                if (entry.isIntersecting) {
+                    // Entering a new card
+                    viewStart = Date.now();
+                    activeCardId = entry.target.dataset.id;
+                    entry.target.querySelector('.prompt').classList.add('visible');
+                } else if (activeCardId === entry.target.dataset.id) {
+                    // Leaving the card - save the time
+                    const timeSpent = Date.now() - viewStart;
+                    await _supabase.from('posts').update({ dwell_time_ms: timeSpent }).eq('id', activeCardId);
+                }
+            });
+        }, { threshold: 0.8 });
         document.querySelectorAll('.card').forEach(card => observer.observe(card));
     }
 
