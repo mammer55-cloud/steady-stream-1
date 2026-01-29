@@ -16,10 +16,9 @@ jobs:
 
       - name: Inject Secrets into index.html
         run: |
-          # Using | as a delimiter to avoid errors with URL slashes
-          sed -i "s|__SUPABASE_URL__|${{ secrets.SUPABASE_URL }}|g" index.html
-          sed -i "s|__SUPABASE_KEY__|${{ secrets.SUPABASE_KEY }}|g" index.html
-          sed -i "s|__GROQ_API_KEY__|${{ secrets.GROQ_API_KEY }}|g" index.html
+          sed -i 's|__SUPABASE_URL__|'"${{ secrets.SUPABASE_URL }}"'|g' index.html
+          sed -i 's|__SUPABASE_KEY__|'"${{ secrets.SUPABASE_KEY }}"'|g' index.html
+          sed -i 's|__GROQ_API_KEY__|'"${{ secrets.GROQ_API_KEY }}"'|g' index.html
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
