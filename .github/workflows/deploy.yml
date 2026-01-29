@@ -13,26 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Inject Supabase URL
-        uses: quiet-mccann/substitute-string-action@v1.0.2
-        with:
-          file_path: index.html
-          search_string: 'PROD_SUPABASE_URL'
-          replacement_string: ${{ secrets.SUPABASE_URL }}
-
-      - name: Inject Supabase Key
-        uses: quiet-mccann/substitute-string-action@v1.0.2
-        with:
-          file_path: index.html
-          search_string: 'PROD_SUPABASE_KEY'
-          replacement_string: ${{ secrets.SUPABASE_KEY }}
-
-      - name: Inject Groq Key
-        uses: quiet-mccann/substitute-string-action@v1.0.2
-        with:
-          file_path: index.html
-          search_string: 'PROD_GROQ_KEY'
-          replacement_string: ${{ secrets.GROQ_API_KEY }}
+      - name: Inject Secrets
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          # Create a temporary file with secrets injected
+          envsubst < index.html > index_temp.html
+          mv index_temp.html index.html
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
