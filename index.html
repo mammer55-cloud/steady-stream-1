@@ -29,12 +29,14 @@
             height: 100vh; 
             overflow-y: scroll; 
             scroll-snap-type: y mandatory; 
+            scroll-snap-stop: always; /* Forces stop at each post */
             -webkit-overflow-scrolling: touch; 
-        }
+            }
 
         .card { 
             height: 100vh; 
             scroll-snap-align: start; 
+            scroll-snap-stop: always; /* Forces stop at each card */
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
@@ -43,7 +45,7 @@
             box-sizing: border-box; 
             text-align: center; 
             position: relative; 
-        }
+            }
 
         .prompt { 
             font-size: 1.7rem; 
@@ -57,6 +59,7 @@
         .prompt.visible { 
             opacity: 1; 
         }
+
 
         .bridge-container { 
             min-height: 120px; 
@@ -131,6 +134,8 @@
             opacity: 1;
         }
 
+        .dislike-btn.active { color: #a94442; opacity: 1; }
+
         .thought-input { 
             border: none; 
             border-bottom: 1px solid var(--accent); 
@@ -185,6 +190,8 @@
 </head>
 <body>
     <div class="tester-bar">
+        <button class="test-btn" onclick="showSavedHub()">View Saved</button>
+        <button class="test-btn" onclick="loadFeed()">Home Feed</button>
         <button class="test-btn" onclick="triggerTestCook()">Test Algorithm (+3 Cards)</button>
         <div id="algo-status" style="font-size: 10px; color: var(--accent);">Ready</div>
     </div>
@@ -231,6 +238,31 @@
         const isLiked = el.innerText === '❤️';
         el.innerText = isLiked ? '♡' : '❤️';
         await _supabase.from('posts').update({ liked: !isLiked }).eq('id', id);
+    }
+
+    async function toggleDislike(id, el) {
+        const isDisliked = el.classList.contains('active');
+        el.classList.toggle('active');
+        // This physically triggers the change in your Supabase 'disliked' column
+        await _supabase.from('posts').update({ disliked: !isDisliked }).eq('id', id);
+        if (!isDisliked) el.closest('.card').style.opacity = '0.3'; // Visual feedback
+    }
+
+    async function showSavedHub() {
+        const status = document.getElementById('algo-status');
+        status.innerText = "Opening Saved Hub...";
+        const { data, error } = await _supabase
+            .from('posts')
+            .select('*')
+            .eq('liked', true)
+            .order('created_at', { ascending: false });
+        
+        if (data.length > 0) {
+            renderFeed(data); // We'll refactor loadFeed to use a generic renderer
+            status.innerText = "Viewing Saved";
+        } else {
+            status.innerText = "No saved posts yet.";
+        }
     }
 
     async function saveComment(id, val) {
