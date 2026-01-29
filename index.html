@@ -77,7 +77,13 @@
     async function triggerTestCook() {
         const status = document.getElementById('algo-status');
         status.innerText = "Analyzing vibe...";
-        const { data: history } = await _supabase.from('posts').select('prompt, category, liked, comment').or('liked.eq.true,comment.neq.null').limit(10);
+// Add the .order part so it sees your LATEST comments
+        const { data: history } = await _supabase
+            .from('posts')
+            .select('prompt, category, liked, comment')
+            .or('liked.eq.true,comment.neq.null')
+            .order('created_at', { ascending: false }) // This is the missing piece
+            .limit(50);        
         const contextString = history.length > 0 ? JSON.stringify(history) : "Start with general logic and sensory prompts.";
         
         try {
