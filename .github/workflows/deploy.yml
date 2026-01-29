@@ -13,11 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Force Injection
+      - name: Configure Worker URL
         run: |
-          sed -i "s|UK_WILDCATS_URL|${{ secrets.SUPABASE_URL }}|g" index.html
-          sed -i "s|UK_WILDCATS_KEY|${{ secrets.SUPABASE_KEY }}|g" index.html
-          sed -i "s|UK_WILDCATS_GROQ|${{ secrets.GROQ_API_KEY }}|g" index.html
+          # Replace the placeholder with your Cloudflare Worker URL
+          # This is the ONLY thing that needs to be in the public HTML
+          sed -i "s|WORKER_URL_HERE|steady-stream-api.mammergaming55.workers.dev|g" index.html
 
       - name: Push to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
