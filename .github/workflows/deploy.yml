@@ -19,6 +19,11 @@ jobs:
           # Search for the const and replace the value
           sed -i "s|const WORKER_URL = \".*\";|const WORKER_URL = \"https://steady-stream-api.mammergaming55.workers.dev\";|g" index.html
 
+      - name: Inject Secrets into index.html
+        run: |
+          sed -i "s|SUPABASE_URL_PLACEHOLDER|${{ secrets.SUPABASE_URL }}|g" index.html
+          sed -i "s|SUPABASE_KEY_PLACEHOLDER|${{ secrets.SUPABASE_KEY }}|g" index.html
+
       - name: Push to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
