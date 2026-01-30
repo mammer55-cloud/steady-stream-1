@@ -104,6 +104,12 @@
         .thumbnail {
             background: rgba(255, 245, 230, 0.5); border: 1px solid var(--accent);
             border-radius: 12px; padding: 20px; cursor: pointer; min-height: 120px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .thumbnail:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 69, 19, 0.1);
         }
 
         .status-msg {
@@ -122,8 +128,8 @@
     <div class="gallery-view" id="gallery"></div>
 
     <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="loadFeed()">Home</button>
-        <button class="nav-btn" onclick="showSavedHub()">Saved</button>
+        <button class="nav-btn active" id="homeBtn" onclick="loadFeed()">Home</button>
+        <button class="nav-btn" id="savedBtn" onclick="showSavedHub()">Saved</button>
         <button class="nav-btn" onclick="triggerProxyCook()">Cook</button>
     </nav>
 
@@ -138,6 +144,7 @@
         let activeCardId = null;
         let viewStart = 0;
         let currentView = 'feed';
+        let savedPosts = [];
 
         function showStatus(msg, duration = 3000) {
             const el = document.getElementById('statusMsg');
@@ -150,6 +157,10 @@
             currentView = 'feed';
             document.getElementById('feed').style.display = 'block';
             document.getElementById('gallery').classList.remove('active');
+            
+            // Update nav buttons
+            document.getElementById('homeBtn').classList.add('active');
+            document.getElementById('savedBtn').classList.remove('active');
             
             const { data, error } = await _supabase.from('posts')
                 .select('*')
@@ -165,8 +176,9 @@
             const gallery = document.getElementById('gallery');
             gallery.classList.add('active');
             
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.nav-btn')[1].classList.add('active');
+            // Update nav buttons
+            document.getElementById('homeBtn').classList.remove('active');
+            document.getElementById('savedBtn').classList.add('active');
             
             const { data, error } = await _supabase.from('posts')
                 .select('*')
@@ -174,6 +186,7 @@
                 .order('created_at', { ascending: false });
                 
             if (!error && data.length > 0) {
+                savedPosts = data;
                 renderGallery(data);
             } else {
                 gallery.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--accent);">No saved posts yet.</div>';
@@ -185,12 +198,29 @@
             gallery.innerHTML = '<div class="gallery-grid"></div>';
             const grid = gallery.querySelector('.gallery-grid');
             
-            data.forEach(item => {
+            data.forEach((item, index) => {
                 const thumb = document.createElement('div');
                 thumb.className = 'thumbnail';
                 thumb.innerHTML = `<div style="font-size:0.8rem;">${item.prompt}</div>`;
+                thumb.onclick = () => openSavedFeed(index);
                 grid.appendChild(thumb);
             });
+        }
+
+        function openSavedFeed(startIndex) {
+            currentView = 'saved-feed';
+            document.getElementById('gallery').classList.remove('active');
+            document.getElementById('feed').style.display = 'block';
+            
+            renderFeed(savedPosts);
+            
+            // Scroll to the clicked post
+            setTimeout(() => {
+                const cards = document.querySelectorAll('.card');
+                if (cards[startIndex]) {
+                    cards[startIndex].scrollIntoView({ behavior: 'instant' });
+                }
+            }, 0);
         }
 
         function renderFeed(data) {
@@ -202,7 +232,7 @@
                 card.setAttribute('data-id', item.id);
                 card.innerHTML = `
                     ${item.dwell_time_ms ? '<div class="seen-badge">Seen</div>' : ''}
-                    <div class="prompt">${item.prompt}</div>
+                    <div class="prompt visible">${item.prompt}</div>
                     <div class="bridge-container">
                         <button class="ready-btn" onclick="showBridge(this)">I am ready</button>
                         <div class="bridge">${item.bridge}</div>
@@ -263,7 +293,6 @@
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        entry.target.querySelector('.prompt').classList.add('visible');
                         viewStart = Date.now();
                         activeCardId = entry.target.getAttribute('data-id');
                     } else if (activeCardId === entry.target.getAttribute('data-id')) {
