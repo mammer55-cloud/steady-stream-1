@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Steady Stream V1</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
+    <style>
         :root { 
-            /* A deep, warm cream palette mimicking maxed Night Shift */
             --bg: #fff5e6; 
             --text: #2e2a24; 
             --accent: #b0a491; 
@@ -15,629 +14,244 @@
         }
 
         body, html { 
-            margin: 0; 
-            padding: 0; 
-            height: 100%; 
-            overflow: hidden; 
-            background: var(--bg); 
-            font-family: 'Times New Roman', serif; 
-            color: var(--text); 
-            transition: background 0.5s ease;
+            margin: 0; padding: 0; height: 100%; overflow: hidden; 
+            background: var(--bg); font-family: 'Times New Roman', serif; 
+            color: var(--text); transition: background 0.5s ease;
         }
 
         .container { 
-            height: 100vh; 
-            overflow-y: scroll; 
-            scroll-snap-type: y mandatory; 
-            scroll-snap-stop: always; 
-            -webkit-overflow-scrolling: touch; 
-            padding-bottom: 80px;
-            box-sizing: border-box;
+            height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; 
+            scroll-snap-stop: always; -webkit-overflow-scrolling: touch; 
+            padding-bottom: 80px; box-sizing: border-box;
         }
 
         .card { 
-            height: 100vh; 
-            scroll-snap-align: start; 
-            scroll-snap-stop: always; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 2.5rem; 
-            box-sizing: border-box; 
-            text-align: center; 
-            position: relative; 
+            height: 100vh; scroll-snap-align: start; display: flex; 
+            flex-direction: column; justify-content: center; align-items: center; 
+            padding: 2.5rem; box-sizing: border-box; text-align: center; position: relative; 
         }
 
-        /* Seen indicator - elegant corner badge */
         .seen-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-family: sans-serif;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: var(--accent);
-            opacity: 0.5;
-            padding: 6px 12px;
-            border: 1px solid var(--accent);
-            border-radius: 20px;
-            background: rgba(255, 245, 230, 0.7);
-            backdrop-filter: blur(10px);
+            position: absolute; top: 20px; right: 20px; font-family: sans-serif;
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.2px;
+            color: var(--accent); opacity: 0.5; padding: 6px 12px;
+            border: 1px solid var(--accent); border-radius: 20px;
         }
 
         .prompt { 
-            font-size: 1.7rem; 
-            line-height: 1.5; 
-            max-width: 600px; 
-            margin-bottom: 2rem; 
-            opacity: 0; 
-            transition: opacity 0.4s ease-in; 
+            font-size: 1.7rem; line-height: 1.5; max-width: 600px; 
+            margin-bottom: 2rem; opacity: 0; transition: opacity 0.4s ease-in; 
         }
 
-        .prompt.visible { 
-            opacity: 1; 
-        }
-
-        .prompt.instant {
-            transition: none;
-        }
-
-        .bridge-container { 
-            min-height: 120px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-        }
+        .prompt.visible { opacity: 1; }
+        .prompt.instant { transition: none; }
 
         .bridge { 
-            font-family: sans-serif; 
-            font-size: 1.1rem; 
-            color: var(--accent); 
-            max-width: 500px; 
-            opacity: 0; 
-            transform: translateY(10px); 
-            transition: all 0.8s ease-out; 
-            display: none; 
+            font-family: sans-serif; font-size: 1.1rem; color: var(--accent); 
+            max-width: 500px; opacity: 0; transform: translateY(10px); 
+            transition: all 0.8s ease-out; display: none; 
         }
 
-        .bridge.visible { 
-            opacity: 1; 
-            transform: translateY(0); 
-            display: block; 
-        }
+        .bridge.visible { opacity: 1; transform: translateY(0); display: block; }
 
         .ready-btn { 
-            background: none; 
-            border: 1px solid var(--accent); 
-            color: var(--accent); 
-            padding: 12px 24px; 
-            cursor: pointer; 
-            border-radius: 20px; 
-            font-family: sans-serif;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
+            background: none; border: 1px solid var(--accent); color: var(--accent); 
+            padding: 12px 24px; cursor: pointer; border-radius: 20px; 
+            font-family: sans-serif; font-size: 0.9rem;
         }
 
-        .ready-btn:hover {
-            border-color: var(--text);
-            color: var(--text);
-        }
-
-        .controls { 
-            position: absolute; 
-            bottom: 120px; 
-            display: flex; 
-            gap: 30px; 
-            align-items: center; 
-        }
+        .controls { position: absolute; bottom: 120px; display: flex; gap: 30px; align-items: center; }
 
         .like-btn, .dislike-btn { 
-            font-family: sans-serif; 
-            font-size: 0.75rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            opacity: 0.4;
-            transition: opacity 0.3s ease, color 0.3s ease;
-            user-select: none;
+            font-family: sans-serif; font-size: 0.75rem; text-transform: uppercase; 
+            letter-spacing: 1.5px; cursor: pointer; opacity: 0.4;
         }
 
-        .like-btn.active { 
-            opacity: 1; 
-            color: var(--active-brown); 
-            font-weight: bold;
-        }
-
-        .dislike-btn:hover {
-            opacity: 1;
-        }
-
-        .dislike-btn.active { color: #a94442; opacity: 1; }
+        .like-btn.active { opacity: 1; color: var(--active-brown); font-weight: bold; }
 
         .thought-input { 
-            border: none; 
-            border-bottom: 1px solid var(--accent); 
-            background: none; 
-            padding: 8px; 
-            font-size: 0.85rem; 
-            width: 160px; 
-            text-align: center; 
-            color: var(--text);
-            font-family: 'Times New Roman', serif;
-            outline: none;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
+            border: none; border-bottom: 1px solid var(--accent); background: none; 
+            padding: 8px; font-size: 0.85rem; width: 160px; text-align: center; 
+            color: var(--text); font-family: 'Times New Roman', serif; outline: none;
         }
 
-        .thought-input:focus {
-            opacity: 1;
-            border-bottom-color: var(--text);
-        }
-
-        /* Bottom Navigation Bar - iPhone style */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background: rgba(255, 245, 230, 0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--accent);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-            z-index: 1000;
-            padding: 0 20px;
+            position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
+            background: rgba(255, 245, 230, 0.95); backdrop-filter: blur(20px);
+            border-top: 1px solid var(--accent); display: flex;
+            justify-content: center; align-items: center; gap: 25px; z-index: 1000;
         }
 
         .nav-btn {
-            background: none;
-            border: none;
-            color: var(--text);
-            font-family: sans-serif;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            padding: 8px 16px;
-            border-radius: 20px;
-            transition: all 0.3s ease;
-            opacity: 0.6;
+            background: none; border: none; color: var(--text); font-family: sans-serif;
+            font-size: 0.7rem; text-transform: uppercase; cursor: pointer;
+            padding: 8px 16px; border-radius: 20px; opacity: 0.6;
         }
 
-        .nav-btn:hover {
-            opacity: 1;
-            background: rgba(176, 164, 145, 0.15);
-        }
+        .nav-btn.active { opacity: 1; background: var(--accent); color: var(--bg); }
 
-        .nav-btn.active {
-            opacity: 1;
-            background: var(--accent);
-            color: var(--bg);
-        }
-
-        /* Gallery view */
         .gallery-view {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 70px;
-            background: var(--bg);
-            overflow-y: auto;
-            padding: 40px 20px 20px;
-            display: none;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 70px;
+            background: var(--bg); overflow-y: auto; padding: 40px 20px 20px; display: none;
         }
 
-        .gallery-view.active {
-            display: block;
-        }
+        .gallery-view.active { display: block; }
 
         .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            max-width: 900px;
-            margin: 0 auto;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px; max-width: 900px; margin: 0 auto;
         }
 
         .thumbnail {
-            background: rgba(255, 245, 230, 0.5);
-            border: 1px solid var(--accent);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-height: 120px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
+            background: rgba(255, 245, 230, 0.5); border: 1px solid var(--accent);
+            border-radius: 12px; padding: 20px; cursor: pointer; min-height: 120px;
         }
 
-        .thumbnail:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            border-color: var(--text);
-        }
-
-        .thumbnail-prompt {
-            font-size: 0.85rem;
-            line-height: 1.4;
-            color: var(--text);
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
-        }
-
-        .thumbnail-note {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--active-brown);
-            opacity: 0.7;
-        }
-
-        /* Fullscreen overlay for viewing saved posts */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--bg);
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-        }
-
-        .overlay.active {
-            display: flex;
-        }
-
-        .overlay-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: rgba(255, 245, 230, 0.95);
-            backdrop-filter: blur(20px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 1px solid var(--accent);
-            z-index: 2001;
-        }
-
-        .close-btn {
-            position: absolute;
-            left: 20px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: var(--text);
-            cursor: pointer;
-            padding: 10px;
-        }
-
-        .overlay-content {
-            margin-top: 60px;
-            height: calc(100vh - 60px);
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* Status message */
         .status-msg {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--active-brown);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-family: sans-serif;
-            font-size: 0.85rem;
-            z-index: 3000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--active-brown); color: white; padding: 12px 24px;
+            border-radius: 25px; font-family: sans-serif; font-size: 0.85rem;
+            z-index: 3000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
         }
 
-        .status-msg.visible {
-            opacity: 1;
-        }
-
-        @media (max-width: 600px) {
-            .prompt { font-size: 1.4rem; }
-            .bridge { font-size: 1rem; }
-            .controls { gap: 20px; }
-        }
-</style>
+        .status-msg.visible { opacity: 1; }
+    </style>
 </head>
 <body>
     <div class="status-msg" id="statusMsg"></div>
-    
     <div class="container" id="feed"></div>
-    
     <div class="gallery-view" id="gallery"></div>
-    
-    <div class="overlay" id="overlay">
-        <div class="overlay-header">
-            <button class="close-btn" onclick="closeOverlay()">✕</button>
-        </div>
-        <div class="overlay-content" id="overlay-content"></div>
-    </div>
 
     <nav class="bottom-nav">
         <button class="nav-btn active" onclick="loadFeed()">Home</button>
         <button class="nav-btn" onclick="showSavedHub()">Saved</button>
-        <button class="nav-btn" onclick="triggerTestCook()">Cook</button>
+        <button class="nav-btn" onclick="triggerProxyCook()">Cook</button>
     </nav>
 
-<script>
-// --- CONFIGURATION ---
-// The deploy.yml action will replace this with your actual Worker URL
-const WORKER_URL = "https://steady-stream-api.mammergaming55.workers.dev"; 
+    <script>
+        // These placeholders are replaced by GitHub Actions during deploy
+        const WORKER_URL = "https://steady-stream-api.mammergaming55.workers.dev";
+        const SUPABASE_URL = "SUPABASE_URL_PLACEHOLDER";
+        const SUPABASE_KEY = "SUPABASE_KEY_PLACEHOLDER";
 
-// Initialize Supabase (Keep these as they are handled by RLS)
-const SUPABASE_URL = "UK_WILDCATS_URL";
-const SUPABASE_KEY = "UK_WILDCATS_KEY";
-const { createClient } = supabase;
-const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- UPDATED GENERATION LOGIC ---
-async function triggerTestCook() {
-    showStatus("Analyzing vibe...", 0); 
-    
-    // 1. Fetch history to send to the proxy for personalization
-    const { data: history } = await _supabase.from('posts')
-        .select('prompt, category, liked, comment')
-        .or('liked.eq.true,comment.not.is.null')
-        .order('created_at', { ascending: false })
-        .limit(50);
-    
-    try {
-        showStatus("Generating new posts...", 0);
-        
-        // 2. SECURE: Only use the Cloudflare Worker proxy
-        const response = await fetch(`${WORKER_URL}/api/generate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                history: history // Your Worker will handle the system instruction construction
-            })
-        });
+        let activeCardId = null;
+        let viewStart = 0;
+        let currentView = 'feed';
 
-        if (!response.ok) throw new Error("Worker request failed");
-
-        const result = await response.json();
-        const newPosts = result.posts; // Assuming Worker returns { posts: [...] }
-
-        // 3. Insert generated content back into Supabase
-        await _supabase.from('posts').insert(newPosts);
-        
-        showStatus("3 new posts generated!", 3000);
-        
-        if (currentView === 'feed') {
-            loadFeed(); // Reload to show new content
+        function showStatus(msg, duration = 3000) {
+            const el = document.getElementById('statusMsg');
+            el.textContent = msg;
+            el.classList.add('visible');
+            if (duration > 0) setTimeout(() => el.classList.remove('visible'), duration);
         }
-    } catch (e) { 
-        console.error("Proxy Error:", e);
-        showStatus("Error: Could not reach the generator", 3000);
-    }
-}
 
-    let activeCardId = null;
-    let viewStart = 0;
-    let totalDwellTime = 0;
-    let currentView = 'feed';
-
-    function showStatus(msg, duration = 3000) {
-        const statusEl = document.getElementById('statusMsg');
-        statusEl.textContent = msg;
-        statusEl.classList.add('visible');
-        if (duration > 0) {
-            setTimeout(() => {
-                hideStatus();
-            }, duration);
+        async function loadFeed() {
+            currentView = 'feed';
+            document.getElementById('feed').style.display = 'block';
+            document.getElementById('gallery').classList.remove('active');
+            
+            const { data, error } = await _supabase.from('posts')
+                .select('*')
+                .eq('disliked', false)
+                .order('created_at', { ascending: false });
+            
+            if (!error) renderFeed(data);
         }
-    }
 
-    function hideStatus() {
-        document.getElementById('statusMsg').classList.remove('visible');
-    }
-
-    // Helper to render feed view
-    function renderFeed(data, instantShow = false) {
-        const feed = document.getElementById('feed');
-        feed.innerHTML = '';
-        data.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.setAttribute('data-id', item.id);
-            
-            const seenBadge = item.dwell_time_ms && item.dwell_time_ms > 0 
-                ? '<div class="seen-badge">Seen</div>' 
-                : '';
-            
-            card.innerHTML = `
-                ${seenBadge}
-                <div class="prompt ${instantShow ? 'visible instant' : ''}">${item.prompt}</div>
-                <div class="bridge-container">
-                    <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
-                    <div class="bridge">${item.bridge}</div>
-                </div>
-                <div class="controls">
-                    <span class="like-btn ${item.liked ? 'active' : ''}" onclick="toggleLike('${item.id}', this)">Like</span>
-                    <span class="dislike-btn ${item.disliked ? 'active' : ''}" onclick="toggleDislike('${item.id}', this)">Dismiss</span>
-                    <input type="text" class="thought-input" placeholder="Note..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
-                </div>`;
-            feed.appendChild(card);
-        });
-        observeCards();
-    }
-
-    // Render thumbnail gallery
-    function renderGallery(data) {
-        const gallery = document.getElementById('gallery');
-        const grid = document.createElement('div');
-        grid.className = 'gallery-grid';
-        
-        data.forEach(item => {
-            const thumb = document.createElement('div');
-            thumb.className = 'thumbnail';
-            thumb.onclick = () => openOverlay(item.id);
-            
-            const noteIndicator = item.comment ? '<div class="thumbnail-note">Has note</div>' : '';
-            
-            thumb.innerHTML = `
-                <div class="thumbnail-prompt">${item.prompt}</div>
-                ${noteIndicator}
-            `;
-            grid.appendChild(thumb);
-        });
-        
-        gallery.innerHTML = '';
-        gallery.appendChild(grid);
-    }
-
-    async function openOverlay(startId) {
-        const { data } = await _supabase.from('posts').select('*').eq('liked', true).order('created_at', { ascending: false });
-        const overlay = document.getElementById('overlay');
-        const content = document.getElementById('overlay-content');
-        content.innerHTML = '';
-        
-        data.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.setAttribute('data-id', item.id);
-            
-            card.innerHTML = `
-                <div class="prompt visible instant">${item.prompt}</div>
-                <div class="bridge-container">
-                    <button class="ready-btn" onclick="this.nextElementSibling.classList.add('visible'); this.style.display='none'">I am ready</button>
-                    <div class="bridge">${item.bridge}</div>
-                </div>
-                <div class="controls">
-                    <span class="like-btn active" onclick="toggleLike('${item.id}', this)">Unlike</span>
-                    <input type="text" class="thought-input" placeholder="Note..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
-                </div>`;
-            content.appendChild(card);
-        });
-        
-        overlay.classList.add('active');
-        
-        // Scroll to the clicked post instantly (no animation)
-        setTimeout(() => {
-            const targetCard = content.querySelector(`[data-id="${startId}"]`);
-            if (targetCard) {
-                targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
-            }
-        }, 10);
-    }
-
-    function closeOverlay() {
-        document.getElementById('overlay').classList.remove('active');
-    }
-
-    async function loadFeed() {
-        currentView = 'feed';
-        document.getElementById('feed').style.display = 'block';
-        document.getElementById('gallery').classList.remove('active');
-        
-        // Update nav buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.nav-btn')[0].classList.add('active');
-        
-        const { data, error } = await _supabase.from('posts').select('*').eq('disliked', false).order('created_at', { ascending: false });
-        if (!error) {
-            renderFeed(data, true); // Pass true for instant show
-            // Scroll to top instantly
-            setTimeout(() => {
-                document.getElementById('feed').scrollTo({ top: 0, behavior: 'auto' });
-            }, 10);
-        }
-    }
-
-    async function showSavedHub() {
-        currentView = 'gallery';
-        document.getElementById('feed').style.display = 'none';
-        document.getElementById('gallery').classList.add('active');
-        
-        // Update nav buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.nav-btn')[1].classList.add('active');
-        
-        const { data, error } = await _supabase.from('posts').select('*').eq('liked', true).order('created_at', { ascending: false });
-        if (!error && data.length > 0) {
-            renderGallery(data);
-        } else {
-            document.getElementById('gallery').innerHTML = '<div style="text-align: center; padding: 50px; color: var(--accent);">No saved posts yet.</div>';
-        }
-    }
-
-    async function toggleLike(id, el) {
-        const isActive = el.classList.contains('active');
-        el.classList.toggle('active');
-        await _supabase.from('posts').update({ liked: !isActive }).eq('id', id);
-    }
-
-    async function toggleDislike(id, el) {
-        const isDisliked = el.classList.contains('active');
-        el.classList.toggle('active');
-        await _supabase.from('posts').update({ disliked: !isDisliked }).eq('id', id);
-        if (!isDisliked) el.closest('.card').style.opacity = '0.3';
-    }
-
-    async function saveComment(id, val) {
-        await _supabase.from('posts').update({ comment: val }).eq('id', id);
-    }
-
-    // Smart Timer: Pause when user leaves the app or locks phone
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden && activeCardId) {
-            totalDwellTime += (Date.now() - viewStart);
-        } else if (activeCardId) {
-            viewStart = Date.now();
-        }
-    });
-
-    function observeCards() {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(async entry => {
-                const cardId = entry.target.getAttribute('data-id');
-                if (entry.isIntersecting) {
-                    viewStart = Date.now();
-                    totalDwellTime = 0;
-                    activeCardId = cardId;
-                    entry.target.querySelector('.prompt').classList.add('visible');
-                } else if (activeCardId === cardId) {
-                    const finalTime = totalDwellTime + (Date.now() - viewStart);
-                    if (finalTime > 2000) {
-                        await _supabase.from('posts').update({ dwell_time_ms: finalTime }).eq('id', cardId);
-                    }
-                    activeCardId = null;
-                }
+        function renderFeed(data) {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = '';
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('data-id', item.id);
+                card.innerHTML = `
+                    ${item.dwell_time_ms ? '<div class="seen-badge">Seen</div>' : ''}
+                    <div class="prompt">${item.prompt}</div>
+                    <div class="bridge-container">
+                        <button class="ready-btn" onclick="showBridge(this)">I am ready</button>
+                        <div class="bridge">${item.bridge}</div>
+                    </div>
+                    <div class="controls">
+                        <span class="like-btn ${item.liked ? 'active' : ''}" onclick="toggleLike('${item.id}', this)">Like</span>
+                        <span class="dislike-btn" onclick="toggleDislike('${item.id}', this)">Dismiss</span>
+                        <input type="text" class="thought-input" placeholder="Note..." onchange="saveComment('${item.id}', this.value)" value="${item.comment || ''}">
+                    </div>`;
+                feed.appendChild(card);
             });
-        }, { threshold: 0.8 });
-        document.querySelectorAll('.card').forEach(card => observer.observe(card));
-    }
+            observeCards();
+        }
 
-    loadFeed();
-</script>
+        function showBridge(btn) {
+            btn.nextElementSibling.classList.add('visible');
+            btn.style.display = 'none';
+        }
+
+        async function triggerProxyCook() {
+            showStatus("Consulting the void...", 0);
+            
+            // 1. Get history for personalization
+            const { data: history } = await _supabase.from('posts')
+                .select('prompt, category, liked, comment')
+                .or('liked.eq.true,comment.not.is.null')
+                .limit(20);
+
+            try {
+                // 2. Call your Cloudflare Worker Proxy
+                const response = await fetch(`${WORKER_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ history })
+                });
+
+                const result = await response.json();
+                const newPosts = JSON.parse(result.choices[0].message.content).posts;
+
+                // 3. Insert into Supabase
+                await _supabase.from('posts').insert(newPosts);
+                
+                showStatus("New content cooked.", 3000);
+                loadFeed();
+            } catch (e) {
+                console.error(e);
+                showStatus("Cooking failed.", 3000);
+            }
+        }
+
+        async function toggleLike(id, el) {
+            const active = el.classList.toggle('active');
+            await _supabase.from('posts').update({ liked: active }).eq('id', id);
+        }
+
+        async function toggleDislike(id, el) {
+            await _supabase.from('posts').update({ disliked: true }).eq('id', id);
+            el.closest('.card').style.opacity = '0.2';
+        }
+
+        async function saveComment(id, val) {
+            await _supabase.from('posts').update({ comment: val }).eq('id', id);
+        }
+
+        function observeCards() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.querySelector('.prompt').classList.add('visible');
+                        viewStart = Date.now();
+                        activeCardId = entry.target.getAttribute('data-id');
+                    } else if (activeCardId === entry.target.getAttribute('data-id')) {
+                        const dwell = Date.now() - viewStart;
+                        if (dwell > 2000) _supabase.from('posts').update({ dwell_time_ms: dwell }).eq('id', activeCardId);
+                    }
+                });
+            }, { threshold: 0.7 });
+            document.querySelectorAll('.card').forEach(c => observer.observe(c));
+        }
+
+        loadFeed();
+    </script>
 </body>
 </html>
