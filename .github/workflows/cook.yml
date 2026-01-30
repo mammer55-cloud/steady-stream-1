@@ -1,10 +1,9 @@
 name: Daily Content Cook
 on:
   schedule:
-    # This triggers every 2 hours at the top of the hour
-    # 14, 16, 18, 20, 22 UTC (which is 9am, 11am, 1pm, 3pm, 5pm EST)
-    # 0, 2, 4 UTC (which is 7pm, 9pm, 11pm EST)
-    - cron: '0 14,16,18,20,22,0,2,4 * * *'
+    # This triggers twice a day:
+    # 14 UTC (9am EST) and 2 UTC (9pm EST)
+    - cron: '0 2,14 * * *'
   workflow_dispatch: # This adds a "Run now" button
 jobs:
   cook:
