@@ -15,9 +15,9 @@ jobs:
 
       - name: Configure Worker URL
         run: |
-          # Replace the placeholder with your Cloudflare Worker URL
-          # This is the ONLY thing that needs to be in the public HTML
-          sed -i "s|WORKER_URL_HERE|steady-stream-api.mammergaming55.workers.dev|g" index.html
+          # This ensures that even if you change workers, the HTML updates
+          # Search for the const and replace the value
+          sed -i "s|const WORKER_URL = \".*\";|const WORKER_URL = \"https://steady-stream-api.mammergaming55.workers.dev\";|g" index.html
 
       - name: Push to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
