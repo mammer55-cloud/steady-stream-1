@@ -44,7 +44,6 @@
         }
 
         .prompt.visible { opacity: 1; }
-        .prompt.instant { transition: none; }
 
         .bridge { 
             font-family: sans-serif; font-size: 1.1rem; color: var(--accent); 
@@ -95,42 +94,6 @@
             background: var(--bg); overflow-y: auto; padding: 40px 20px 20px; display: none;
         }
 
-        async function showSavedHub() {
-            currentView = 'gallery';
-            document.getElementById('feed').style.display = 'none';
-            const gallery = document.getElementById('gallery');
-            gallery.classList.add('active');
-            
-            // Update nav buttons
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.nav-btn')[1].classList.add('active');
-            
-            const { data, error } = await _supabase.from('posts')
-                .select('*')
-                .eq('liked', true)
-                .order('created_at', { ascending: false });
-                
-            if (!error && data.length > 0) {
-                renderGallery(data);
-            } else {
-                gallery.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--accent);">No saved posts yet.</div>';
-            }
-        }
-        
-        function renderGallery(data) {
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = '<div class="gallery-grid"></div>';
-            const grid = gallery.querySelector('.gallery-grid');
-            
-            data.forEach(item => {
-                const thumb = document.createElement('div');
-                thumb.className = 'thumbnail';
-                thumb.innerHTML = `<div class="thumbnail-prompt">${item.prompt}</div>`;
-                // Optional: add click to view full card logic here later
-                grid.appendChild(thumb);
-            });
-        }        
-
         .gallery-view.active { display: block; }
 
         .gallery-grid {
@@ -165,7 +128,6 @@
     </nav>
 
     <script>
-        // These placeholders are replaced by GitHub Actions during deploy
         const WORKER_URL = "https://steady-stream-api.mammergaming55.workers.dev";
         const SUPABASE_URL = "https://zkhvderypqeamtpzrsti.supabase.co";
         const SUPABASE_KEY = "sb_publishable_xlP0Bw5f6hbChbnuLdL5_A_vWIDpUdA";
@@ -195,6 +157,40 @@
                 .order('created_at', { ascending: false });
             
             if (!error) renderFeed(data);
+        }
+
+        async function showSavedHub() {
+            currentView = 'gallery';
+            document.getElementById('feed').style.display = 'none';
+            const gallery = document.getElementById('gallery');
+            gallery.classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.nav-btn')[1].classList.add('active');
+            
+            const { data, error } = await _supabase.from('posts')
+                .select('*')
+                .eq('liked', true)
+                .order('created_at', { ascending: false });
+                
+            if (!error && data.length > 0) {
+                renderGallery(data);
+            } else {
+                gallery.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--accent);">No saved posts yet.</div>';
+            }
+        }
+
+        function renderGallery(data) {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '<div class="gallery-grid"></div>';
+            const grid = gallery.querySelector('.gallery-grid');
+            
+            data.forEach(item => {
+                const thumb = document.createElement('div');
+                thumb.className = 'thumbnail';
+                thumb.innerHTML = `<div style="font-size:0.8rem;">${item.prompt}</div>`;
+                grid.appendChild(thumb);
+            });
         }
 
         function renderFeed(data) {
@@ -227,33 +223,25 @@
         }
 
         async function triggerProxyCook() {
-            showStatus("Consulting the void...", 0);
-            
-            // 1. Get history for personalization
+            showStatus("Cooking...", 0);
             const { data: history } = await _supabase.from('posts')
                 .select('prompt, category, liked, comment')
                 .or('liked.eq.true,comment.not.is.null')
                 .limit(20);
 
             try {
-                // 2. Call your Cloudflare Worker Proxy
                 const response = await fetch(`${WORKER_URL}/api/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ history })
                 });
-
                 const result = await response.json();
                 const newPosts = JSON.parse(result.choices[0].message.content).posts;
-
-                // 3. Insert into Supabase
                 await _supabase.from('posts').insert(newPosts);
-                
-                showStatus("New content cooked.", 3000);
+                showStatus("Done!", 2000);
                 loadFeed();
             } catch (e) {
-                console.error(e);
-                showStatus("Cooking failed.", 3000);
+                showStatus("Error.", 2000);
             }
         }
 
