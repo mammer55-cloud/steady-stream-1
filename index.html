@@ -292,15 +292,29 @@
         function observeCards() {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
+                    const cardId = entry.target.getAttribute('data-id');
+                    
                     if (entry.isIntersecting) {
-                        viewStart = Date.now();
-                        activeCardId = entry.target.getAttribute('data-id');
-                    } else if (activeCardId === entry.target.getAttribute('data-id')) {
-                        const dwell = Date.now() - viewStart;
-                        if (dwell > 2000) _supabase.from('posts').update({ dwell_time_ms: dwell }).eq('id', activeCardId);
+                        // When card comes into view
+                        entry.target.viewStart = Date.now();
+                        activeCardId = cardId;
+                    } else {
+                        // When card leaves view
+                        if (entry.target.viewStart) {
+                            const dwell = Date.now() - entry.target.viewStart;
+                            // Only update if they actually looked for more than 2 seconds
+                            if (dwell > 2000) {
+                                _supabase.from('posts')
+                                    .update({ dwell_time_ms: dwell })
+                                    .eq('id', cardId)
+                                    .then(() => console.log(`Logged ${dwell}ms for ${cardId}`));
+                            }
+                            entry.target.viewStart = null; // Reset
+                        }
                     }
                 });
-            }, { threshold: 0.7 });
+            }, { threshold: 0.6 }); // Trigger when 60% of the card is visible
+            
             document.querySelectorAll('.card').forEach(c => observer.observe(c));
         }
 
