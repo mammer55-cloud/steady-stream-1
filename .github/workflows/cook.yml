@@ -1,10 +1,6 @@
 name: Daily Content Cook
 on:
-  schedule:
-    # This triggers twice a day:
-    # 14 UTC (9am EST) and 2 UTC (9pm EST)
-    - cron: '0 2,14 * * *'
-  workflow_dispatch: # This adds a "Run now" button
+  workflow_dispatch: # This allows you to trigger it manually from the Actions tab
 jobs:
   cook:
     runs-on: ubuntu-latest
